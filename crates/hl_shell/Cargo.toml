@@ -1,0 +1,22 @@
+[package]
+name = "hl_shell"
+description = "Interactive shell for hyprlog"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+hl_core = { path = "../hl_core" }
+hl_common = { path = "../hl_common" }
+rustyline = "15"
+directories = "6"
+
+[dev-dependencies]
