@@ -1,6 +1,9 @@
 # Build
 target/
 
+# C++ Example Build
+examples/cpp/build/
+
 # Temp
 .tmp/
 
