@@ -17,17 +17,17 @@ log_step "$SCOPE" "detecting line counting tool"
 
 if command -v tokei &>/dev/null; then
     log_ok "$SCOPE" "tokei found"
-    log_step "$SCOPE" "executing: tokei --exclude target --exclude .git --exclude .tmp"
+    log_step "$SCOPE" "executing: tokei --files --exclude target --exclude .git --exclude .tmp"
     echo ""
-    tokei --exclude target --exclude .git --exclude .tmp
+    tokei --files --exclude target --exclude .git --exclude .tmp
     echo ""
     log_ok "$SCOPE" "line count complete"
     log_info "$SCOPE" "=== loc.sh finished successfully ==="
 elif command -v cloc &>/dev/null; then
     log_ok "$SCOPE" "cloc found (tokei fallback)"
-    log_step "$SCOPE" "executing: cloc --exclude-dir=target,.git,.tmp ."
+    log_step "$SCOPE" "executing: cloc --by-file --exclude-dir=target,.git,.tmp ."
     echo ""
-    cloc --exclude-dir=target,.git,.tmp .
+    cloc --by-file --exclude-dir=target,.git,.tmp .
     echo ""
     log_ok "$SCOPE" "line count complete"
     log_info "$SCOPE" "=== loc.sh finished successfully ==="
