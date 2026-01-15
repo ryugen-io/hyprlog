@@ -30,6 +30,19 @@ just install
 
 Config file: `~/.config/hypr/hyprlog.conf`
 
+### Splitting Config (Hyprland-Style)
+
+```toml
+# Source other config files
+source = "~/.config/hypr/hyprlog.d/colors.conf"
+source = "~/.config/hypr/hyprlog.d/presets.conf"
+
+[general]
+level = "info"
+```
+
+### Full Example
+
 ```toml
 [general]
 level = "info"                    # debug, info, warn, error

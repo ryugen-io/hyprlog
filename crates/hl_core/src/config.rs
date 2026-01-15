@@ -5,7 +5,7 @@ use crate::color::Color;
 use crate::icon::IconType;
 use crate::tag::{Alignment, Transform};
 use serde::Deserialize;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -18,6 +18,8 @@ pub enum ConfigError {
     Parse(toml::de::Error),
     /// Config directory not found.
     ConfigDirNotFound,
+    /// Cyclic include detected.
+    CyclicInclude(PathBuf),
 }
 
 impl std::fmt::Display for ConfigError {
@@ -26,6 +28,7 @@ impl std::fmt::Display for ConfigError {
             Self::Io(e) => write!(f, "I/O error: {e}"),
             Self::Parse(e) => write!(f, "parse error: {e}"),
             Self::ConfigDirNotFound => write!(f, "config directory not found"),
+            Self::CyclicInclude(p) => write!(f, "cyclic include: {}", p.display()),
         }
     }
 }
@@ -35,7 +38,7 @@ impl std::error::Error for ConfigError {
         match self {
             Self::Io(e) => Some(e),
             Self::Parse(e) => Some(e),
-            Self::ConfigDirNotFound => None,
+            Self::ConfigDirNotFound | Self::CyclicInclude(_) => None,
         }
     }
 }
@@ -221,21 +224,47 @@ pub struct PresetConfig {
     pub msg: String,
 }
 
+/// Extracts `source = "path"` lines from config content.
+///
+/// Returns (sources, remaining TOML content).
+/// This allows Hyprland-style multiple source lines which aren't valid TOML.
+fn extract_sources(content: &str) -> (Vec<String>, String) {
+    let mut sources = Vec::new();
+    let mut remaining = String::new();
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("source") && trimmed.contains('=') {
+            // Extract path from: source = "path" or source="path"
+            if let Some(path) = trimmed
+                .split('=')
+                .nth(1)
+                .map(|s| s.trim().trim_matches('"').trim_matches('\''))
+            {
+                if !path.is_empty() {
+                    sources.push(path.to_string());
+                }
+            }
+        } else {
+            remaining.push_str(line);
+            remaining.push('\n');
+        }
+    }
+
+    (sources, remaining)
+}
+
 impl Config {
     /// Loads configuration from the default location.
     ///
     /// Looks for `~/.config/hypr/hyprlog.conf`.
+    /// Supports Hyprland-style `source = "path"` directives.
     ///
     /// # Errors
     /// Returns error if config cannot be loaded.
     pub fn load() -> Result<Self, ConfigError> {
         let config_path = Self::get_config_path()?;
-
-        if config_path.exists() {
-            Self::load_from(&config_path)
-        } else {
-            Ok(Self::default())
-        }
+        Self::load_with_sources(&config_path, &mut HashSet::new())
     }
 
     /// Loads configuration from a specific path.
@@ -243,9 +272,61 @@ impl Config {
     /// # Errors
     /// Returns error if file cannot be read or parsed.
     pub fn load_from(path: &Path) -> Result<Self, ConfigError> {
+        Self::load_with_sources(path, &mut HashSet::new())
+    }
+
+    /// Loads configuration with source file processing and cycle detection.
+    fn load_with_sources(path: &Path, seen: &mut HashSet<PathBuf>) -> Result<Self, ConfigError> {
+        // Return default if file doesn't exist
+        if !path.exists() {
+            return Ok(Self::default());
+        }
+
+        let canonical = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
+
+        // Cycle detection
+        if !seen.insert(canonical.clone()) {
+            return Err(ConfigError::CyclicInclude(canonical));
+        }
+
         let content = fs::read_to_string(path)?;
-        let config: Self = toml::from_str(&content)?;
+        let (sources, toml_content) = extract_sources(&content);
+        let mut config: Self = toml::from_str(&toml_content)?;
+
+        // Process sources and merge (main config takes precedence)
+        for source_path in sources {
+            let expanded = shellexpand::tilde(&source_path);
+            let source_file = Path::new(expanded.as_ref());
+            if source_file.exists() {
+                let source_config = Self::load_with_sources(source_file, seen)?;
+                config.merge(source_config);
+            }
+        }
+
         Ok(config)
+    }
+
+    /// Merges another config into self.
+    ///
+    /// Values from `other` are only used if not already set in `self`.
+    /// `HashMap` fields are merged (self's values take precedence).
+    pub fn merge(&mut self, other: Self) {
+        // Merge HashMaps (other's values, then self overwrites)
+        for (k, v) in other.colors {
+            self.colors.entry(k).or_insert(v);
+        }
+        for (k, v) in other.presets {
+            self.presets.entry(k).or_insert(v);
+        }
+        for (k, v) in other.icons.nerdfont {
+            self.icons.nerdfont.entry(k).or_insert(v);
+        }
+        for (k, v) in other.icons.ascii {
+            self.icons.ascii.entry(k).or_insert(v);
+        }
+        for (k, v) in other.tag.labels {
+            self.tag.labels.entry(k).or_insert(v);
+        }
     }
 
     /// Returns the default config file path (`~/.config/hypr/hyprlog.conf`).
