@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="126" height="30" viewBox="0 0 126 30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" version="1.1"  baseProfile="full">
+  <defs>
+    <linearGradient id="headerGradient" x1="0" y1="0" x2="126" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ff5555"/>
+      <stop offset="16%" stop-color="#ffb86c"/>
+      <stop offset="33%" stop-color="#f1fa8c"/>
+      <stop offset="50%" stop-color="#50fa7b"/>
+      <stop offset="66%" stop-color="#8be9fd"/>
+      <stop offset="83%" stop-color="#bd93f9"/>
+      <stop offset="100%" stop-color="#ff79c6"/>
+    </linearGradient>
+  </defs>
+ <g id="mainlayer" font-size="10" style="font-family: monospace">
+<text style="fill:url(#headerGradient)" x="0" y="8">╻</text>
+<text style="fill:url(#headerGradient)" x="12" y="8">╻</text>
+<text style="fill:url(#headerGradient)" x="18" y="8">╻</text>
+<text style="fill:url(#headerGradient)" x="30" y="8">╻</text>
+<text style="fill:url(#headerGradient)" x="36" y="8">┏</text>
+<text style="fill:url(#headerGradient)" x="42" y="8">━</text>
+<text style="fill:url(#headerGradient)" x="48" y="8">┓</text>
+<text style="fill:url(#headerGradient)" x="54" y="8">┏</text>
+<text style="fill:url(#headerGradient)" x="60" y="8">━</text>
+<text style="fill:url(#headerGradient)" x="66" y="8">┓</text>
+<text style="fill:url(#headerGradient)" x="72" y="8">╻</text>
+<text style="fill:url(#headerGradient)" x="90" y="8">┏</text>
+<text style="fill:url(#headerGradient)" x="96" y="8">━</text>
+<text style="fill:url(#headerGradient)" x="102" y="8">┓</text>
+<text style="fill:url(#headerGradient)" x="108" y="8">┏</text>
+<text style="fill:url(#headerGradient)" x="114" y="8">━</text>
+<text style="fill:url(#headerGradient)" x="120" y="8">╸</text>
+<text style="fill:url(#headerGradient)" x="0" y="18">┣</text>
+<text style="fill:url(#headerGradient)" x="6" y="18">━</text>
+<text style="fill:url(#headerGradient)" x="12" y="18">┫</text>
+<text style="fill:url(#headerGradient)" x="18" y="18">┗</text>
+<text style="fill:url(#headerGradient)" x="24" y="18">┳</text>
+<text style="fill:url(#headerGradient)" x="30" y="18">┛</text>
+<text style="fill:url(#headerGradient)" x="36" y="18">┣</text>
+<text style="fill:url(#headerGradient)" x="42" y="18">━</text>
+<text style="fill:url(#headerGradient)" x="48" y="18">┛</text>
+<text style="fill:url(#headerGradient)" x="54" y="18">┣</text>
+<text style="fill:url(#headerGradient)" x="60" y="18">┳</text>
+<text style="fill:url(#headerGradient)" x="66" y="18">┛</text>
+<text style="fill:url(#headerGradient)" x="72" y="18">┃</text>
+<text style="fill:url(#headerGradient)" x="90" y="18">┃</text>
+<text style="fill:url(#headerGradient)" x="102" y="18">┃</text>
+<text style="fill:url(#headerGradient)" x="108" y="18">┃</text>
+<text style="fill:url(#headerGradient)" x="114" y="18">╺</text>
+<text style="fill:url(#headerGradient)" x="120" y="18">┓</text>
+<text style="fill:url(#headerGradient)" x="0" y="28">╹</text>
+<text style="fill:url(#headerGradient)" x="12" y="28">╹</text>
+<text style="fill:url(#headerGradient)" x="24" y="28">╹</text>
+<text style="fill:url(#headerGradient)" x="36" y="28">╹</text>
+<text style="fill:url(#headerGradient)" x="54" y="28">╹</text>
+<text style="fill:url(#headerGradient)" x="60" y="28">┗</text>
+<text style="fill:url(#headerGradient)" x="66" y="28">╸</text>
+<text style="fill:url(#headerGradient)" x="72" y="28">┗</text>
+<text style="fill:url(#headerGradient)" x="78" y="28">━</text>
+<text style="fill:url(#headerGradient)" x="84" y="28">╸</text>
+<text style="fill:url(#headerGradient)" x="90" y="28">┗</text>
+<text style="fill:url(#headerGradient)" x="96" y="28">━</text>
+<text style="fill:url(#headerGradient)" x="102" y="28">┛</text>
+<text style="fill:url(#headerGradient)" x="108" y="28">┗</text>
+<text style="fill:url(#headerGradient)" x="114" y="28">━</text>
+<text style="fill:url(#headerGradient)" x="120" y="28">┛</text>
+ </g>
+</svg>

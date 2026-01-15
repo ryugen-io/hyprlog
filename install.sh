@@ -20,6 +20,7 @@ shopt -s inherit_errexit 2>/dev/null || true
 # Configuration
 # -----------------------------------------------------------------------------
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || echo "")"
+readonly CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/hypr"
 readonly CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/hyprlog"
 readonly STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/hyprlog"
 readonly INSTALL_DIR="${HOME}/.local/bin"
@@ -224,6 +225,39 @@ compact_binary() {
     fi
 }
 
+install_config() {
+    local config_file="${CONFIG_DIR}/hyprlog.conf"
+
+    if [[ -f "$config_file" ]]; then
+        log "Config exists: $config_file"
+        return
+    fi
+
+    # Try to find default config
+    local default_config=""
+    if [[ -n "$SCRIPT_DIR" && -f "${SCRIPT_DIR}/assets/hyprlog.conf" ]]; then
+        default_config="${SCRIPT_DIR}/assets/hyprlog.conf"
+    fi
+
+    if [[ -n "$default_config" ]]; then
+        cp "$default_config" "$config_file"
+        success "Installed config: $config_file"
+    else
+        # Create minimal config
+        cat > "$config_file" << 'CONF'
+[general]
+level = "info"
+app_name = "hyprlog"
+
+[terminal]
+enabled = true
+colors = true
+icons = "nerdfont"
+CONF
+        success "Created default config: $config_file"
+    fi
+}
+
 # -----------------------------------------------------------------------------
 # Main Installation
 # -----------------------------------------------------------------------------
@@ -235,10 +269,14 @@ main() {
     detect_install_mode
 
     # Create directories
+    create_dir "$CONFIG_DIR"
     create_dir "$INSTALL_DIR"
     create_dir "$CACHE_DIR"
     create_dir "$STATE_DIR"
     create_dir "${STATE_DIR}/logs"
+
+    # Install config
+    install_config
 
     # Install based on mode
     case "$INSTALL_MODE" in
