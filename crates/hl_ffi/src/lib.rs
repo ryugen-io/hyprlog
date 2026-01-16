@@ -127,6 +127,35 @@ pub unsafe extern "C" fn hyprlog_init_with_config(
     Box::into_raw(ctx)
 }
 
+/// Creates a logger with default config but custom app name.
+///
+/// Loads config from `~/.config/hypr/hyprlog.conf` if present,
+/// but uses the provided `app_name` for file logging paths.
+///
+/// # Safety
+/// `app_name` must be a valid null-terminated UTF-8 string.
+///
+/// Returns `NULL` on failure.
+#[no_mangle]
+pub unsafe extern "C" fn hyprlog_init_with_app(app_name: *const c_char) -> *mut HyprlogContext {
+    if app_name.is_null() {
+        return ptr::null_mut();
+    }
+
+    let Ok(app_str) = CStr::from_ptr(app_name).to_str() else {
+        return ptr::null_mut();
+    };
+
+    let logger = Logger::from_config(app_str);
+
+    let ctx = Box::new(HyprlogContext {
+        logger,
+        last_error: RefCell::new(None),
+    });
+
+    Box::into_raw(ctx)
+}
+
 /// Creates a minimal logger with only terminal output (no config file).
 ///
 /// Useful for quick setup without configuration.

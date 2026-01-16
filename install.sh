@@ -2,13 +2,18 @@
 # shellcheck disable=SC2155
 # =============================================================================
 # hyprlog Install Script
-# Builds and installs the hyprlog binary
+# Builds and installs the hyprlog CLI and optionally the C-ABI library
 #
 # Usage:
 #   From source (in repo):  ./install.sh
 #   From release package:   ./install.sh
 #   Remote install:         curl -fsSL https://raw.githubusercontent.com/ryugen-io/hyprlog/main/install.sh | bash
 #   Specific version:       curl -fsSL ... | bash -s -- v0.1.0
+#
+# Installs:
+#   CLI:    ~/.local/bin/hyprlog
+#   C-ABI:  ~/.local/lib/libhl_ffi.so (optional, source builds only)
+#           ~/.local/include/hyprlog/hyprlog.h
 # =============================================================================
 
 set -euo pipefail
@@ -24,6 +29,8 @@ readonly CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/hypr"
 readonly CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/hyprlog"
 readonly STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/hyprlog"
 readonly INSTALL_DIR="${HOME}/.local/bin"
+readonly LIB_DIR="${HOME}/.local/lib"
+readonly INCLUDE_DIR="${HOME}/.local/include"
 
 # GitHub Release Settings
 readonly REPO="ryugen-io/hyprlog"
@@ -258,6 +265,69 @@ CONF
     fi
 }
 
+ask_yes_no() {
+    local prompt="$1"
+    local default="${2:-n}"
+    local reply
+
+    if [[ "$default" == "y" ]]; then
+        prompt="$prompt [Y/n] "
+    else
+        prompt="$prompt [y/N] "
+    fi
+
+    read -r -p "$prompt" reply
+    reply="${reply:-$default}"
+
+    [[ "$reply" =~ ^[Yy]$ ]]
+}
+
+install_cabi() {
+    # Only available when installing from source
+    if [[ "$INSTALL_MODE" != "source" ]]; then
+        return
+    fi
+
+    # Check if library exists
+    local lib_src="${SCRIPT_DIR}/target/release/libhl_ffi.so"
+    local header_src="${SCRIPT_DIR}/include/hyprlog.h"
+
+    if [[ ! -f "$lib_src" ]]; then
+        log "Building C-ABI library..."
+        cd "$SCRIPT_DIR" || die "Failed to cd to script directory"
+        cargo build --release --package hl_ffi 2>&1 || die "C-ABI build failed"
+    fi
+
+    if [[ ! -f "$lib_src" ]]; then
+        warn "C-ABI library not found: $lib_src"
+        return
+    fi
+
+    if [[ ! -f "$header_src" ]]; then
+        warn "C-ABI header not found: $header_src"
+        return
+    fi
+
+    # Create directories
+    create_dir "$LIB_DIR"
+    create_dir "${INCLUDE_DIR}/hyprlog"
+
+    # Install library
+    cp "$lib_src" "${LIB_DIR}/" || die "Failed to install library"
+    success "Installed library: ${LIB_DIR}/libhl_ffi.so"
+
+    # Install header
+    cp "$header_src" "${INCLUDE_DIR}/hyprlog/" || die "Failed to install header"
+    success "Installed header: ${INCLUDE_DIR}/hyprlog/hyprlog.h"
+
+    # ldconfig hint
+    if [[ ":$LD_LIBRARY_PATH:" != *":$LIB_DIR:"* ]]; then
+        warn "$LIB_DIR not in LD_LIBRARY_PATH"
+        echo "  Add to shell config: export LD_LIBRARY_PATH=\"\$HOME/.local/lib:\$LD_LIBRARY_PATH\""
+        echo "  Or run: sudo ldconfig $LIB_DIR"
+    fi
+}
+
 # -----------------------------------------------------------------------------
 # Main Installation
 # -----------------------------------------------------------------------------
@@ -291,7 +361,15 @@ main() {
             ;;
     esac
 
-    success "Installed successfully to $INSTALL_DIR"
+    success "Installed CLI to $INSTALL_DIR"
+
+    # Ask about C-ABI installation (only for source builds)
+    if [[ "$INSTALL_MODE" == "source" ]]; then
+        echo ""
+        if ask_yes_no "Install C-ABI library for C/C++ integration?"; then
+            install_cabi
+        fi
+    fi
 
     # PATH check
     if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then

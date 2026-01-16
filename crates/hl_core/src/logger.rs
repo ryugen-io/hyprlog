@@ -1,8 +1,11 @@
 //! Main logger struct with builder pattern.
 
 use crate::Level;
+use crate::config::Config;
 use crate::format::FormatValues;
+use crate::icon::IconSet;
 use crate::output::{FileOutput, LogRecord, Output, OutputError, TerminalOutput};
+use crate::tag::TagConfig;
 
 /// The main logger.
 #[derive(Default)]
@@ -16,6 +19,71 @@ impl Logger {
     #[must_use]
     pub fn builder() -> LoggerBuilder {
         LoggerBuilder::new()
+    }
+
+    /// Creates a logger from the default hyprlog config file.
+    ///
+    /// Loads config from `~/.config/hypr/hyprlog.conf` and builds a logger
+    /// with terminal and file outputs as configured.
+    ///
+    /// # Arguments
+    /// * `app_name` - Application name override (used for file paths/logs).
+    ///
+    /// # Example
+    /// ```ignore
+    /// let logger = Logger::from_config("myapp");
+    /// logger.info("MAIN", "Started");
+    /// ```
+    #[must_use]
+    pub fn from_config(app_name: &str) -> Self {
+        let config = Config::load().unwrap_or_default();
+        Self::from_config_with(&config, app_name)
+    }
+
+    /// Creates a logger from a given config.
+    ///
+    /// # Arguments
+    /// * `config` - The hyprlog config to use.
+    /// * `app_name` - Application name override.
+    #[must_use]
+    pub fn from_config_with(config: &Config, app_name: &str) -> Self {
+        let mut builder = LoggerBuilder::new().level(config.parse_level());
+
+        if config.terminal.enabled {
+            let icon_set = match config.parse_icon_type() {
+                crate::icon::IconType::NerdFont => IconSet::nerdfont(),
+                crate::icon::IconType::Ascii => IconSet::ascii(),
+                crate::icon::IconType::None => IconSet::none(),
+            };
+            let tag_config = TagConfig::new()
+                .prefix(&config.tag.prefix)
+                .suffix(&config.tag.suffix)
+                .transform(config.parse_transform())
+                .min_width(config.tag.min_width)
+                .alignment(config.parse_alignment());
+
+            builder = builder
+                .terminal()
+                .colors(config.terminal.colors)
+                .icons(icon_set)
+                .structure(&config.terminal.structure)
+                .tag_config(tag_config)
+                .done();
+        }
+
+        if config.file.enabled {
+            builder = builder
+                .file()
+                .base_dir(&config.file.base_dir)
+                .path_structure(&config.file.path_structure)
+                .filename_structure(&config.file.filename_structure)
+                .content_structure(&config.file.content_structure)
+                .timestamp_format(&config.file.timestamp_format)
+                .app_name(app_name)
+                .done();
+        }
+
+        builder.build()
     }
 
     /// Logs a message at the given level.

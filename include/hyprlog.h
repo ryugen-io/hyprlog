@@ -74,6 +74,19 @@ struct HyprlogContext *hyprlog_init(void);
 struct HyprlogContext *hyprlog_init_with_config(const char *config_path);
 
 /**
+ * Creates a logger with default config but custom app name.
+ *
+ * Loads config from `~/.config/hypr/hyprlog.conf` if present,
+ * but uses the provided `app_name` for file logging paths.
+ *
+ * # Safety
+ * `app_name` must be a valid null-terminated UTF-8 string.
+ *
+ * Returns `NULL` on failure.
+ */
+struct HyprlogContext *hyprlog_init_with_app(const char *app_name);
+
+/**
  * Creates a minimal logger with only terminal output (no config file).
  *
  * Useful for quick setup without configuration.
