@@ -1,6 +1,6 @@
 //! Preset loading and execution.
 
-use hl_core::{Config, Level, Logger};
+use hl_core::{Config, Level, Logger, internal};
 
 /// Error type for preset operations.
 #[derive(Debug)]
@@ -40,11 +40,20 @@ impl<'a> PresetRunner<'a> {
     /// # Errors
     /// Returns error if preset not found or has invalid level.
     pub fn run(&self, name: &str) -> Result<(), PresetError> {
-        let preset = self
-            .config
-            .presets
-            .get(name)
-            .ok_or_else(|| PresetError::NotFound(name.to_string()))?;
+        internal::trace("PRESET", &format!("Looking up preset: {name}"));
+        let preset = self.config.presets.get(name).ok_or_else(|| {
+            internal::warn("PRESET", &format!("Preset not found: {name}"));
+            PresetError::NotFound(name.to_string())
+        })?;
+
+        internal::debug(
+            "PRESET",
+            &format!(
+                "Preset: level={}, scope={}",
+                preset.level,
+                preset.scope.as_deref().unwrap_or("LOG")
+            ),
+        );
 
         let level: Level = preset
             .level
@@ -52,8 +61,10 @@ impl<'a> PresetRunner<'a> {
             .map_err(|_| PresetError::InvalidLevel(preset.level.clone()))?;
 
         let scope = preset.scope.as_deref().unwrap_or("LOG");
+        let app_name = preset.app_name.as_deref();
 
-        self.logger.log(level, scope, &preset.msg);
+        self.logger.log_full(level, scope, &preset.msg, app_name);
+        internal::info("PRESET", &format!("Executed preset: {name}"));
 
         Ok(())
     }

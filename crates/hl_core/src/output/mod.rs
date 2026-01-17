@@ -18,6 +18,8 @@ pub struct LogRecord {
     pub values: FormatValues,
     /// Optional label override for custom display (e.g., "SUCCESS" instead of "INFO").
     pub label_override: Option<String>,
+    /// Optional app name override (uses logger default if None).
+    pub app_name: Option<String>,
 }
 
 impl LogRecord {

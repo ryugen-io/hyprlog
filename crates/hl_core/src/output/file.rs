@@ -1,6 +1,7 @@
 //! File output with path templates.
 
 use crate::format::{FormatTemplate, FormatValues};
+use crate::internal;
 use crate::style;
 use crate::tag::TagConfig;
 
@@ -116,6 +117,7 @@ impl FileOutput {
         } else {
             PathBuf::from(&self.base_dir)
         };
+        internal::trace("FILE", &format!("Resolved base dir: {}", path.display()));
         Ok(path)
     }
 
@@ -127,7 +129,7 @@ impl FileOutput {
         let values = FormatValues::new()
             .level(record.level.as_str())
             .scope(&record.scope)
-            .app(&self.app_name)
+            .app(record.app_name.as_deref().unwrap_or(&self.app_name))
             .date(
                 &now.format("%Y").to_string(),
                 &now.format("%m").to_string(),
@@ -155,7 +157,7 @@ impl FileOutput {
             .scope(&record.scope)
             .msg(&clean_msg)
             .level(record.level.as_str())
-            .app(&self.app_name);
+            .app(record.app_name.as_deref().unwrap_or(&self.app_name));
 
         self.content_template.render(&values)
     }
@@ -164,10 +166,27 @@ impl FileOutput {
 impl Output for FileOutput {
     fn write(&self, record: &LogRecord) -> Result<(), OutputError> {
         let path = self.build_path(record)?;
+        internal::trace("FILE", &format!("Writing to: {}", path.display()));
 
         // Create directories
         if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent)?;
+            if !parent.exists() {
+                match fs::create_dir_all(parent) {
+                    Ok(()) => {
+                        internal::debug(
+                            "FILE",
+                            &format!("Created directory: {}", parent.display()),
+                        );
+                    }
+                    Err(e) => {
+                        internal::error(
+                            "FILE",
+                            &format!("Failed to create directory {}: {}", parent.display(), e),
+                        );
+                        return Err(e.into());
+                    }
+                }
+            }
         }
 
         // Append to file (single atomic write with newline)
@@ -212,6 +231,7 @@ mod tests {
             message: "hello world".to_string(),
             values: FormatValues::new(),
             label_override: None,
+            app_name: None,
         };
 
         output.write(&record).unwrap();
@@ -239,6 +259,7 @@ mod tests {
             message: "<bold>styled</bold> text".to_string(),
             values: FormatValues::new(),
             label_override: None,
+            app_name: None,
         };
 
         output.write(&record).unwrap();

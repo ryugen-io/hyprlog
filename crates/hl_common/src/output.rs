@@ -67,26 +67,62 @@ impl OutputFormatter {
         let mut lines = Vec::new();
 
         if dry_run {
-            let count = result.would_delete.len();
-            let size = format_size(result.would_free);
-            lines.push(format!("Would delete {count} file(s), freeing {size}"));
-
+            // Deletion info
             if !result.would_delete.is_empty() {
+                let count = result.would_delete.len();
+                let size = format_size(result.would_free);
+                lines.push(format!("Would delete {count} file(s), freeing {size}"));
                 lines.push(String::new());
                 for path in &result.would_delete {
                     lines.push(format!("  {path}"));
                 }
             }
-        } else {
-            let count = result.deleted.len();
-            let size = format_size(result.freed);
-            lines.push(format!("Deleted {count} file(s), freed {size}"));
 
+            // Compression info
+            if !result.would_compress.is_empty() {
+                if !lines.is_empty() {
+                    lines.push(String::new());
+                }
+                let count = result.would_compress.len();
+                let size = format_size(result.would_compress_save);
+                lines.push(format!("Would compress {count} file(s), saving ~{size}"));
+                lines.push(String::new());
+                for path in &result.would_compress {
+                    lines.push(format!("  {path}"));
+                }
+            }
+
+            if lines.is_empty() {
+                lines.push("No files to process".to_string());
+            }
+        } else {
+            // Deletion info
             if !result.deleted.is_empty() {
+                let count = result.deleted.len();
+                let size = format_size(result.freed);
+                lines.push(format!("Deleted {count} file(s), freed {size}"));
                 lines.push(String::new());
                 for path in &result.deleted {
                     lines.push(format!("  {path}"));
                 }
+            }
+
+            // Compression info
+            if !result.compressed.is_empty() {
+                if !lines.is_empty() {
+                    lines.push(String::new());
+                }
+                let count = result.compressed.len();
+                let size = format_size(result.compressed_saved);
+                lines.push(format!("Compressed {count} file(s), saved {size}"));
+                lines.push(String::new());
+                for path in &result.compressed {
+                    lines.push(format!("  {path}"));
+                }
+            }
+
+            if lines.is_empty() {
+                lines.push("No files processed".to_string());
             }
         }
 
@@ -121,11 +157,13 @@ mod tests {
                     path: "/old.log".to_string(),
                     size: 1024,
                     age_days: 5,
+                    modified_date: None,
                 },
                 LogFileInfo {
                     path: "/new.log".to_string(),
                     size: 1024,
                     age_days: 0,
+                    modified_date: None,
                 },
             ],
         };

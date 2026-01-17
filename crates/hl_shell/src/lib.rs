@@ -1,7 +1,7 @@
 //! hyprlog interactive shell.
 
 use hl_common::{OutputFormatter, PresetRunner};
-use hl_core::{CleanupOptions, Config, IconSet, Level, Logger, cleanup, stats};
+use hl_core::{CleanupOptions, Config, IconSet, Level, Logger, cleanup, internal, stats};
 use rustyline::error::ReadlineError;
 use rustyline::history::DefaultHistory;
 use rustyline::{DefaultEditor, Editor};
@@ -21,9 +21,12 @@ pub fn run(config: &Config) -> Result<(), String> {
 
     let history_path = get_history_path();
     if let Some(path) = &history_path {
-        let _ = rl.load_history(path);
+        if rl.load_history(path).is_err() {
+            internal::warn("SHELL", "Could not load history");
+        }
     }
 
+    internal::info("SHELL", "Starting interactive shell");
     println!("hyprlog shell - type 'help' for commands, 'quit' to exit");
 
     loop {
@@ -44,25 +47,30 @@ pub fn run(config: &Config) -> Result<(), String> {
                 break;
             }
             Err(e) => {
-                eprintln!("Error: {e}");
+                internal::error("SHELL", &format!("Readline error: {e}"));
                 break;
             }
         }
     }
 
     if let Some(path) = &history_path {
-        let _ = rl.save_history(path);
+        if rl.save_history(path).is_err() {
+            internal::warn("SHELL", "Could not save history");
+        }
     }
 
+    internal::info("SHELL", "Shell exited");
     Ok(())
 }
 
 fn handle_command(line: &str, config: &Config, logger: &Logger) -> bool {
+    internal::trace("SHELL", &format!("Parsing: {line}"));
     let parts: Vec<&str> = line.split_whitespace().collect();
     if parts.is_empty() {
         return true;
     }
 
+    internal::trace("SHELL", &format!("Executing: {}", parts[0]));
     match parts[0] {
         "quit" | "exit" | "q" => false,
         "help" | "?" => {
@@ -94,8 +102,8 @@ fn handle_command(line: &str, config: &Config, logger: &Logger) -> bool {
             true
         }
         _ => {
-            eprintln!("Unknown command: {}", parts[0]);
-            eprintln!("Type 'help' for available commands");
+            internal::error("SHELL", &format!("Unknown command: {}", parts[0]));
+            internal::info("SHELL", "Type 'help' for available commands");
             true
         }
     }
@@ -103,11 +111,11 @@ fn handle_command(line: &str, config: &Config, logger: &Logger) -> bool {
 
 fn cmd_log(parts: &[&str], logger: &Logger) {
     if parts.len() < 4 {
-        eprintln!("Usage: log <level> <scope> <message>");
+        internal::warn("SHELL", "Usage: log <level> <scope> <message>");
         return;
     }
     let Some(level) = parse_level(parts[1]) else {
-        eprintln!("Invalid level: {}", parts[1]);
+        internal::error("SHELL", &format!("Invalid level: {}", parts[1]));
         return;
     };
     logger.log(level, parts[2], &parts[3..].join(" "));
@@ -115,7 +123,7 @@ fn cmd_log(parts: &[&str], logger: &Logger) {
 
 fn cmd_log_shorthand(parts: &[&str], logger: &Logger) {
     if parts.len() < 3 {
-        eprintln!("Usage: {} <scope> <message>", parts[0]);
+        internal::warn("SHELL", &format!("Usage: {} <scope> <message>", parts[0]));
         return;
     }
     let Some(level) = parse_level(parts[0]) else {
@@ -126,12 +134,12 @@ fn cmd_log_shorthand(parts: &[&str], logger: &Logger) {
 
 fn cmd_preset(parts: &[&str], config: &Config, logger: &Logger) {
     if parts.len() < 2 {
-        eprintln!("Usage: preset <name>");
+        internal::warn("SHELL", "Usage: preset <name>");
         return;
     }
     let runner = PresetRunner::new(config, logger);
     if let Err(e) = runner.run(parts[1]) {
-        eprintln!("Error: {e}");
+        internal::error("PRESET", &format!("{e}"));
     }
 }
 
@@ -155,7 +163,7 @@ fn cmd_stats(config: &Config) {
             let formatter = OutputFormatter::new().colors(config.terminal.colors);
             println!("{}", formatter.format_stats(&s));
         }
-        Err(e) => eprintln!("Error: {e}"),
+        Err(e) => internal::error("STATS", &format!("{e}")),
     }
 }
 
@@ -163,11 +171,14 @@ fn cmd_cleanup(parts: &[&str], config: &Config) {
     let dry_run = parts.contains(&"--dry-run");
     let all = parts.contains(&"--all");
 
+    internal::debug("CLEANUP", &format!("dry_run={dry_run}, all={all}"));
+
     let mut options = CleanupOptions::new().dry_run(dry_run).delete_all(all);
 
     if let Some(idx) = parts.iter().position(|&p| p == "--older-than") {
         if let Some(days_str) = parts.get(idx + 1) {
             if let Ok(days) = days_str.trim_end_matches('d').parse::<u32>() {
+                internal::debug("CLEANUP", &format!("max_age_days={days}"));
                 options = options.max_age_days(days);
             }
         }
@@ -175,17 +186,23 @@ fn cmd_cleanup(parts: &[&str], config: &Config) {
 
     if let Some(idx) = parts.iter().position(|&p| p == "--max-size") {
         if let Some(size_str) = parts.get(idx + 1) {
+            internal::debug("CLEANUP", &format!("max_size={size_str}"));
             options = options.max_total_size(size_str);
         }
     }
 
     let base_dir = expand_path(&config.file.base_dir);
+    internal::debug("CLEANUP", &format!("Base dir: {}", base_dir.display()));
+
     match cleanup(&base_dir, &options) {
         Ok(result) => {
+            for (path, err) in &result.failed {
+                internal::warn("CLEANUP", &format!("Failed to process {path}: {err}"));
+            }
             let formatter = OutputFormatter::new().colors(config.terminal.colors);
             println!("{}", formatter.format_cleanup(&result, dry_run));
         }
-        Err(e) => eprintln!("Error: {e}"),
+        Err(e) => internal::error("CLEANUP", &format!("{e}")),
     }
 }
 
@@ -238,7 +255,7 @@ fn build_logger(config: &Config) -> Logger {
             .filename_structure(&config.file.filename_structure)
             .content_structure(&config.file.content_structure)
             .timestamp_format(&config.file.timestamp_format)
-            .app_name(&config.general.app_name)
+            .app_name(config.general.app_name.as_deref().unwrap_or("hyprlog"))
             .done();
     }
 

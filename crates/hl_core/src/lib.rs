@@ -29,6 +29,7 @@ pub mod color;
 pub mod config;
 pub mod format;
 pub mod icon;
+pub mod internal;
 pub mod level;
 pub mod logger;
 pub mod output;

@@ -3,6 +3,7 @@
 use crate::Level;
 use crate::color::Color;
 use crate::icon::IconType;
+use crate::internal;
 use crate::tag::{Alignment, Transform};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
@@ -65,6 +66,8 @@ pub struct Config {
     pub terminal: TerminalConfig,
     /// File output settings.
     pub file: FileConfig,
+    /// Cleanup settings.
+    pub cleanup: CleanupConfig,
     /// Tag formatting settings.
     pub tag: TagConfigFile,
     /// Color definitions.
@@ -82,14 +85,14 @@ pub struct GeneralConfig {
     /// Minimum log level.
     pub level: String,
     /// Application name.
-    pub app_name: String,
+    pub app_name: Option<String>,
 }
 
 impl Default for GeneralConfig {
     fn default() -> Self {
         Self {
             level: "info".to_string(),
-            app_name: "hyprlog".to_string(),
+            app_name: None,
         }
     }
 }
@@ -172,6 +175,20 @@ impl Default for RetentionConfig {
     }
 }
 
+/// Cleanup configuration defaults.
+#[derive(Debug, Clone, Deserialize, Default)]
+#[serde(default)]
+pub struct CleanupConfig {
+    /// Maximum age in days (None = no age limit).
+    pub max_age_days: Option<u32>,
+    /// Maximum total size (e.g., "500M", "1G").
+    pub max_total_size: Option<String>,
+    /// Always keep the N most recent files.
+    pub keep_last: Option<usize>,
+    /// Compress files older than N days instead of deleting.
+    pub compress_after_days: Option<u32>,
+}
+
 /// Tag formatting configuration.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default)]
@@ -225,6 +242,8 @@ pub struct PresetConfig {
     pub scope: Option<String>,
     /// Message.
     pub msg: String,
+    /// Application name override.
+    pub app_name: Option<String>,
 }
 
 /// Extracts `source = "path"` lines from config content.
@@ -266,8 +285,14 @@ impl Config {
     /// # Errors
     /// Returns error if config cannot be loaded.
     pub fn load() -> Result<Self, ConfigError> {
+        internal::debug("CONFIG", "Loading config from default location");
         let config_path = Self::get_config_path()?;
-        Self::load_with_sources(&config_path, &mut HashSet::new())
+        let config = Self::load_with_sources(&config_path, &mut HashSet::new())?;
+        internal::info(
+            "CONFIG",
+            &format!("Config loaded from {}", config_path.display()),
+        );
+        Ok(config)
     }
 
     /// Loads configuration from a specific path.
@@ -282,6 +307,7 @@ impl Config {
     fn load_with_sources(path: &Path, seen: &mut HashSet<PathBuf>) -> Result<Self, ConfigError> {
         // Return default if file doesn't exist
         if !path.exists() {
+            internal::debug("CONFIG", "Config file not found, using defaults");
             return Ok(Self::default());
         }
 
@@ -289,6 +315,10 @@ impl Config {
 
         // Cycle detection
         if !seen.insert(canonical.clone()) {
+            internal::warn(
+                "CONFIG",
+                &format!("Cyclic include detected: {}", canonical.display()),
+            );
             return Err(ConfigError::CyclicInclude(canonical));
         }
 
@@ -298,11 +328,14 @@ impl Config {
 
         // Process sources and merge (main config takes precedence)
         for source_path in sources {
+            internal::debug("CONFIG", &format!("Processing source: {source_path}"));
             let expanded = shellexpand::tilde(&source_path);
             let source_file = Path::new(expanded.as_ref());
             if source_file.exists() {
                 let source_config = Self::load_with_sources(source_file, seen)?;
                 config.merge(source_config);
+            } else {
+                internal::warn("CONFIG", &format!("Source file not found: {source_path}"));
             }
         }
 
@@ -424,7 +457,7 @@ transform = "lowercase"
 "#;
         let config: Config = toml::from_str(toml).unwrap();
         assert_eq!(config.general.level, "debug");
-        assert_eq!(config.general.app_name, "testapp");
+        assert_eq!(config.general.app_name, Some("testapp".to_string()));
         assert!(!config.terminal.colors);
         assert_eq!(config.tag.prefix, "<");
         assert_eq!(config.parse_transform(), Transform::Lowercase);

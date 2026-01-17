@@ -204,6 +204,7 @@ mod tests {
             message: "hello".to_string(),
             values: crate::format::FormatValues::new(),
             label_override: None,
+            app_name: None,
         };
 
         let formatted = output.format_record(&record);
@@ -224,6 +225,7 @@ mod tests {
             message: "fail".to_string(),
             values: crate::format::FormatValues::new(),
             label_override: None,
+            app_name: None,
         };
 
         let formatted = output.format_record(&record);

@@ -4,6 +4,7 @@ use crate::Level;
 use crate::config::Config;
 use crate::format::FormatValues;
 use crate::icon::IconSet;
+use crate::internal;
 use crate::output::{FileOutput, LogRecord, Output, OutputError, TerminalOutput};
 use crate::tag::TagConfig;
 
@@ -36,6 +37,7 @@ impl Logger {
     /// ```
     #[must_use]
     pub fn from_config(app_name: &str) -> Self {
+        internal::debug("LOGGER", "Building logger from config");
         let config = Config::load().unwrap_or_default();
         Self::from_config_with(&config, app_name)
     }
@@ -48,8 +50,16 @@ impl Logger {
     #[must_use]
     pub fn from_config_with(config: &Config, app_name: &str) -> Self {
         let mut builder = LoggerBuilder::new().level(config.parse_level());
+        let mut output_count = 0;
 
         if config.terminal.enabled {
+            internal::debug(
+                "LOGGER",
+                &format!(
+                    "Terminal: colors={}, structure={}",
+                    config.terminal.colors, config.terminal.structure
+                ),
+            );
             let icon_set = match config.parse_icon_type() {
                 crate::icon::IconType::NerdFont => IconSet::nerdfont(),
                 crate::icon::IconType::Ascii => IconSet::ascii(),
@@ -69,9 +79,18 @@ impl Logger {
                 .structure(&config.terminal.structure)
                 .tag_config(tag_config)
                 .done();
+            output_count += 1;
         }
 
         if config.file.enabled {
+            internal::debug(
+                "LOGGER",
+                &format!(
+                    "File: base_dir={}, app={}",
+                    config.file.base_dir,
+                    config.general.app_name.as_deref().unwrap_or(app_name)
+                ),
+            );
             builder = builder
                 .file()
                 .base_dir(&config.file.base_dir)
@@ -79,10 +98,16 @@ impl Logger {
                 .filename_structure(&config.file.filename_structure)
                 .content_structure(&config.file.content_structure)
                 .timestamp_format(&config.file.timestamp_format)
-                .app_name(app_name)
+                .timestamp_format(&config.file.timestamp_format)
+                .app_name(config.general.app_name.as_deref().unwrap_or(app_name))
                 .done();
+            output_count += 1;
         }
 
+        internal::debug(
+            "LOGGER",
+            &format!("Logger built with {output_count} outputs"),
+        );
         builder.build()
     }
 
@@ -98,6 +123,7 @@ impl Logger {
             message: msg.to_string(),
             values: FormatValues::new(),
             label_override: None,
+            app_name: None,
         };
 
         for output in &self.outputs {
@@ -121,6 +147,27 @@ impl Logger {
             message: msg.to_string(),
             values: FormatValues::new(),
             label_override: Some(label.to_string()),
+            app_name: None,
+        };
+
+        for output in &self.outputs {
+            let _ = output.write(&record);
+        }
+    }
+
+    /// Logs a message with full control options, including app name override.
+    pub fn log_full(&self, level: Level, scope: &str, msg: &str, app_name: Option<&str>) {
+        if level < self.min_level {
+            return;
+        }
+
+        let record = LogRecord {
+            level,
+            scope: scope.to_string(),
+            message: msg.to_string(),
+            values: FormatValues::new(),
+            label_override: None,
+            app_name: app_name.map(ToString::to_string),
         };
 
         for output in &self.outputs {

@@ -7,7 +7,7 @@ use std::ffi::{c_char, c_int, CStr};
 use std::path::Path;
 use std::ptr;
 
-use hl_core::{Config, IconSet, Level, Logger};
+use hl_core::{internal, Config, IconSet, Level, Logger};
 
 /// Log level constants for FFI.
 pub const HYPRLOG_LEVEL_TRACE: c_int = 0;
@@ -64,7 +64,7 @@ fn build_logger(config: &Config) -> Logger {
             .filename_structure(&config.file.filename_structure)
             .content_structure(&config.file.content_structure)
             .timestamp_format(&config.file.timestamp_format)
-            .app_name(&config.general.app_name)
+            .app_name(config.general.app_name.as_deref().unwrap_or("hyprlog"))
             .done();
     }
 
@@ -83,6 +83,7 @@ fn build_logger(config: &Config) -> Logger {
 /// Returns `NULL` on failure. Use `hyprlog_get_last_error` to retrieve error.
 #[no_mangle]
 pub extern "C" fn hyprlog_init() -> *mut HyprlogContext {
+    internal::debug("FFI", "Logger initialized");
     let config = Config::load().unwrap_or_default();
     let logger = build_logger(&config);
 
@@ -109,8 +110,10 @@ pub unsafe extern "C" fn hyprlog_init_with_config(
         Config::load().unwrap_or_default()
     } else {
         let Ok(path_str) = CStr::from_ptr(config_path).to_str() else {
+            internal::error("FFI", "Invalid UTF-8 in config_path");
             return ptr::null_mut();
         };
+        internal::debug("FFI", &format!("Logger from {path_str}"));
         let Ok(c) = Config::load_from(Path::new(path_str)) else {
             return ptr::null_mut();
         };
@@ -143,9 +146,11 @@ pub unsafe extern "C" fn hyprlog_init_with_app(app_name: *const c_char) -> *mut 
     }
 
     let Ok(app_str) = CStr::from_ptr(app_name).to_str() else {
+        internal::error("FFI", "Invalid UTF-8 in app_name");
         return ptr::null_mut();
     };
 
+    internal::debug("FFI", &format!("Logger for app {app_str}"));
     let logger = Logger::from_config(app_str);
 
     let ctx = Box::new(HyprlogContext {
