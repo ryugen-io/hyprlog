@@ -144,9 +144,20 @@ pub struct FileConfig {
 
 impl Default for FileConfig {
     fn default() -> Self {
+        let base_dir = directories::ProjectDirs::from("", "", "hyprlog").map_or_else(
+            || "logs".to_string(),
+            |dirs| {
+                dirs.state_dir()
+                    .unwrap_or_else(|| dirs.data_dir())
+                    .join("logs")
+                    .to_string_lossy()
+                    .into_owned()
+            },
+        );
+
         Self {
             enabled: false,
-            base_dir: "~/.local/share/hyprlog/logs".to_string(),
+            base_dir,
             path_structure: "{year}/{month}/{app}".to_string(),
             filename_structure: "{scope}_{level}_{day}.log".to_string(),
             content_structure: "{timestamp} {tag} {scope}  {msg}".to_string(),

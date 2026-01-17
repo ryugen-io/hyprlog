@@ -12,7 +12,7 @@
 //!   hyprlog help                         Show help
 
 use hl_common::{OutputFormatter, PresetRunner};
-use hl_core::{CleanupOptions, Config, IconSet, Level, Logger, cleanup, internal, stats};
+use hl_core::{CleanupOptions, Config, Level, Logger, cleanup, internal, stats};
 use serde::Deserialize;
 use std::io::{self, BufRead};
 use std::path::PathBuf;
@@ -190,8 +190,20 @@ fn cmd_presets(config: &Config, logger: &Logger) -> ExitCode {
         println!("No presets defined");
     } else {
         println!("Available presets:");
-        for name in list {
-            println!("  {name}");
+        let mut groups: std::collections::BTreeMap<String, Vec<&str>> =
+            std::collections::BTreeMap::new();
+
+        for (name, app_name) in list {
+            let key = app_name.unwrap_or("general").to_string();
+            groups.entry(key).or_default().push(name);
+        }
+
+        for (app, mut presets) in groups {
+            println!("[{app}]");
+            presets.sort_unstable();
+            for preset in presets {
+                println!("  {preset}");
+            }
         }
     }
     ExitCode::SUCCESS
@@ -387,33 +399,8 @@ Examples:
 }
 
 fn build_logger(config: &Config, app_override: Option<&str>) -> Logger {
-    let app_name = app_override
-        .or(config.general.app_name.as_deref())
-        .unwrap_or("hyprlog");
-    let mut builder = Logger::builder().level(config.parse_level());
-
-    if config.terminal.enabled {
-        builder = builder
-            .terminal()
-            .colors(config.terminal.colors)
-            .icons(IconSet::from(config.parse_icon_type()))
-            .structure(&config.terminal.structure)
-            .done();
-    }
-
-    if config.file.enabled {
-        builder = builder
-            .file()
-            .base_dir(&config.file.base_dir)
-            .path_structure(&config.file.path_structure)
-            .filename_structure(&config.file.filename_structure)
-            .content_structure(&config.file.content_structure)
-            .timestamp_format(&config.file.timestamp_format)
-            .app_name(app_name)
-            .done();
-    }
-
-    builder.build()
+    let app_name = app_override.unwrap_or("hyprlog");
+    Logger::from_config_with(config, app_name)
 }
 
 fn expand_path(path: &str) -> PathBuf {

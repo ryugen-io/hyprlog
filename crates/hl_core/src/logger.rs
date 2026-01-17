@@ -63,11 +63,29 @@ impl Logger {
                     config.terminal.colors, config.terminal.structure
                 ),
             );
-            let icon_set = match config.parse_icon_type() {
+            let mut icon_set = match config.parse_icon_type() {
                 crate::icon::IconType::NerdFont => IconSet::nerdfont(),
                 crate::icon::IconType::Ascii => IconSet::ascii(),
                 crate::icon::IconType::None => IconSet::none(),
             };
+
+            // Apply overrides from config
+            let overrides = match config.parse_icon_type() {
+                crate::icon::IconType::NerdFont => &config.icons.nerdfont,
+                crate::icon::IconType::Ascii => &config.icons.ascii,
+                crate::icon::IconType::None => &HashMap::new(), // No overrides for None
+            };
+
+            for (level_str, icon) in overrides {
+                if let Ok(level) = level_str.parse::<Level>() {
+                    icon_set.set(level, icon);
+                } else {
+                    internal::warn(
+                        "LOGGER",
+                        &format!("Invalid level in icon config: {level_str}"),
+                    );
+                }
+            }
             let tag_config = TagConfig::new()
                 .prefix(&config.tag.prefix)
                 .suffix(&config.tag.suffix)

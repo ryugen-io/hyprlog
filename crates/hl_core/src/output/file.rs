@@ -40,8 +40,19 @@ impl FileOutput {
     /// Creates a new file output with defaults.
     #[must_use]
     pub fn new() -> Self {
+        let base_dir = directories::ProjectDirs::from("", "", "hyprlog").map_or_else(
+            || "logs".to_string(),
+            |dirs| {
+                dirs.state_dir()
+                    .unwrap_or_else(|| dirs.data_dir())
+                    .join("logs")
+                    .to_string_lossy()
+                    .into_owned()
+            },
+        );
+
         Self {
-            base_dir: "~/.local/share/hyprlog/logs".to_string(),
+            base_dir,
             path_template: FormatTemplate::parse("{year}/{month}/{app}"),
             filename_template: FormatTemplate::parse("{scope}_{level}_{day}.log"),
             content_template: FormatTemplate::parse("{timestamp} {tag} {scope}  {msg}"),
@@ -104,11 +115,13 @@ impl FileOutput {
     fn resolve_base_dir(&self) -> Result<PathBuf, OutputError> {
         let path = if self.base_dir.starts_with('~') {
             if let Some(user_dirs) = directories::UserDirs::new() {
-                PathBuf::from(self.base_dir.replacen(
-                    '~',
-                    user_dirs.home_dir().to_str().unwrap_or(""),
-                    1,
-                ))
+                if let Some(home) = user_dirs.home_dir().to_str() {
+                    PathBuf::from(self.base_dir.replacen('~', home, 1))
+                } else {
+                    return Err(OutputError::Format(
+                        "home directory path contains invalid utf-8".to_string(),
+                    ));
+                }
             } else {
                 return Err(OutputError::Format(
                     "could not resolve home directory".to_string(),

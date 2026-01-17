@@ -69,10 +69,14 @@ impl<'a> PresetRunner<'a> {
         Ok(())
     }
 
-    /// Lists available preset names.
+    /// Lists available presets with optional app name.
     #[must_use]
-    pub fn list(&self) -> Vec<&str> {
-        self.config.presets.keys().map(String::as_str).collect()
+    pub fn list(&self) -> Vec<(&str, Option<&str>)> {
+        self.config
+            .presets
+            .iter()
+            .map(|(k, v)| (k.as_str(), v.app_name.as_deref()))
+            .collect()
     }
 
     /// Checks if a preset exists.

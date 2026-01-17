@@ -65,3 +65,8 @@ loc:
 
 docs *args:
     @./dev/scripts/info/docs.sh {{args}}
+
+# === Install ===
+
+install:
+    @./install.sh
