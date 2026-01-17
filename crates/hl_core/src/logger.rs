@@ -1,7 +1,9 @@
 //! Main logger struct with builder pattern.
 
+use std::collections::HashMap;
+
 use crate::Level;
-use crate::config::Config;
+use crate::config::{Config, PresetConfig};
 use crate::format::FormatValues;
 use crate::icon::IconSet;
 use crate::internal;
@@ -13,6 +15,7 @@ use crate::tag::TagConfig;
 pub struct Logger {
     min_level: Level,
     outputs: Vec<Box<dyn Output>>,
+    presets: HashMap<String, PresetConfig>,
 }
 
 impl Logger {
@@ -108,7 +111,15 @@ impl Logger {
             "LOGGER",
             &format!("Logger built with {output_count} outputs"),
         );
-        builder.build()
+
+        if !config.presets.is_empty() {
+            internal::debug(
+                "LOGGER",
+                &format!("Loading {} presets", config.presets.len()),
+            );
+        }
+
+        builder.presets(config.presets.clone()).build()
     }
 
     /// Logs a message at the given level.
@@ -200,6 +211,36 @@ impl Logger {
         self.log(Level::Error, scope, msg);
     }
 
+    /// Logs a message using a preset.
+    ///
+    /// Presets are defined in the config file and can be called by name.
+    /// Returns `true` if the preset was found and logged, `false` otherwise.
+    #[must_use]
+    pub fn preset(&self, name: &str) -> bool {
+        let Some(preset) = self.presets.get(name) else {
+            internal::warn("LOGGER", &format!("Preset not found: {name}"));
+            return false;
+        };
+
+        let level: Level = preset.level.parse().unwrap_or(Level::Info);
+        let scope = preset.scope.as_deref().unwrap_or("LOG");
+
+        self.log_full(level, scope, &preset.msg, preset.app_name.as_deref());
+        true
+    }
+
+    /// Checks if a preset exists.
+    #[must_use]
+    pub fn has_preset(&self, name: &str) -> bool {
+        self.presets.contains_key(name)
+    }
+
+    /// Returns the number of presets.
+    #[must_use]
+    pub fn preset_count(&self) -> usize {
+        self.presets.len()
+    }
+
     /// Flushes all outputs.
     ///
     /// # Errors
@@ -229,6 +270,7 @@ impl Logger {
 pub struct LoggerBuilder {
     min_level: Level,
     outputs: Vec<Box<dyn Output>>,
+    presets: HashMap<String, PresetConfig>,
 }
 
 impl LoggerBuilder {
@@ -238,6 +280,7 @@ impl LoggerBuilder {
         Self {
             min_level: Level::Info,
             outputs: Vec::new(),
+            presets: HashMap::new(),
         }
     }
 
@@ -245,6 +288,13 @@ impl LoggerBuilder {
     #[must_use]
     pub const fn level(mut self, level: Level) -> Self {
         self.min_level = level;
+        self
+    }
+
+    /// Sets the presets.
+    #[must_use]
+    pub fn presets(mut self, presets: HashMap<String, PresetConfig>) -> Self {
+        self.presets = presets;
         self
     }
 
@@ -279,6 +329,7 @@ impl LoggerBuilder {
         Logger {
             min_level: self.min_level,
             outputs: self.outputs,
+            presets: self.presets,
         }
     }
 }
@@ -435,5 +486,31 @@ mod tests {
         // This should not panic even without outputs
         logger.info("TEST", "should be filtered");
         logger.warn("TEST", "should pass");
+    }
+
+    #[test]
+    fn preset_not_found() {
+        let logger = Logger::builder().build();
+        assert!(!logger.preset("nonexistent"));
+    }
+
+    #[test]
+    fn preset_found() {
+        use crate::config::PresetConfig;
+        let mut presets = HashMap::new();
+        presets.insert(
+            "startup".to_string(),
+            PresetConfig {
+                level: "info".to_string(),
+                as_level: None,
+                scope: Some("INIT".to_string()),
+                msg: "Application started".to_string(),
+                app_name: None,
+            },
+        );
+        let logger = Logger::builder().presets(presets).build();
+        assert!(logger.has_preset("startup"));
+        assert_eq!(logger.preset_count(), 1);
+        assert!(logger.preset("startup"));
     }
 }

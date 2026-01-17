@@ -48,7 +48,7 @@ log_debug() {
     local scope="$1"
     local msg="$2"
     if [[ -n "${VERBOSE:-}" ]]; then
-        echo -e "${LOG_PURPLE}[⫐]${LOG_NC} ${scope}  ${msg}"
+        echo -e "${LOG_PURPLE}[d]${LOG_NC} ${scope}  ${msg}"
     fi
 }
 
