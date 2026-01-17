@@ -23,25 +23,25 @@ readonly LOG_NC=$'\033[0m'
 log_info() {
     local scope="$1"
     local msg="$2"
-    echo -e "${LOG_CYAN}[⯀]${LOG_NC} ${scope}  ${msg}"
+    echo -e "${LOG_CYAN}[i]${LOG_NC} ${scope}  ${msg}"
 }
 
 log_ok() {
     local scope="$1"
     local msg="$2"
-    echo -e "${LOG_GREEN}[✓]${LOG_NC} ${scope}  ${msg}"
+    echo -e "${LOG_GREEN}[o]${LOG_NC} ${scope}  ${msg}"
 }
 
 log_warn() {
     local scope="$1"
     local msg="$2"
-    echo -e "${LOG_YELLOW}[⚠]${LOG_NC} ${scope}  ${msg}" >&2
+    echo -e "${LOG_YELLOW}[w]${LOG_NC} ${scope}  ${msg}" >&2
 }
 
 log_error() {
     local scope="$1"
     local msg="$2"
-    echo -e "${LOG_RED}[✖]${LOG_NC} ${scope}  ${msg}" >&2
+    echo -e "${LOG_RED}[f]${LOG_NC} ${scope}  ${msg}" >&2
 }
 
 log_debug() {
@@ -55,7 +55,7 @@ log_debug() {
 log_step() {
     local scope="$1"
     local msg="$2"
-    echo -e "${LOG_PURPLE}[⮡]${LOG_NC} ${scope}  ${msg}"
+    echo -e "${LOG_PURPLE}[s]${LOG_NC} ${scope}  ${msg}"
 }
 
 # Die with error message
