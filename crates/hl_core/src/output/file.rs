@@ -170,11 +170,12 @@ impl Output for FileOutput {
             fs::create_dir_all(parent)?;
         }
 
-        // Append to file
+        // Append to file (single atomic write with newline)
         let mut file = OpenOptions::new().create(true).append(true).open(&path)?;
 
-        let content = self.format_content(record);
-        writeln!(file, "{content}")?;
+        let mut content = self.format_content(record);
+        content.push('\n');
+        file.write_all(content.as_bytes())?;
 
         Ok(())
     }
