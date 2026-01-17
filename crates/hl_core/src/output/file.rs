@@ -144,7 +144,7 @@ impl FileOutput {
     fn format_content(&self, record: &LogRecord) -> String {
         let now = Local::now();
         let timestamp = now.format(&self.timestamp_format).to_string();
-        let tag = self.tag_config.format(record.level);
+        let tag = record.format_tag(&self.tag_config);
 
         // Strip styling tags from message for file output
         let clean_msg = style::strip_tags(&record.message);
@@ -210,6 +210,7 @@ mod tests {
             scope: "TEST".to_string(),
             message: "hello world".to_string(),
             values: FormatValues::new(),
+            label_override: None,
         };
 
         output.write(&record).unwrap();
@@ -236,6 +237,7 @@ mod tests {
             scope: "X".to_string(),
             message: "<bold>styled</bold> text".to_string(),
             values: FormatValues::new(),
+            label_override: None,
         };
 
         output.write(&record).unwrap();

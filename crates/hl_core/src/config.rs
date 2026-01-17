@@ -216,8 +216,11 @@ pub struct IconsConfig {
 /// Preset/dictionary entry.
 #[derive(Debug, Clone, Deserialize)]
 pub struct PresetConfig {
-    /// Log level.
+    /// Display label (shown in output).
     pub level: String,
+    /// Internal level for filtering (e.g., "info" when level is "success").
+    #[serde(default, rename = "as")]
+    pub as_level: Option<String>,
     /// Scope.
     pub scope: Option<String>,
     /// Message.

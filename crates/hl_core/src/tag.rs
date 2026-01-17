@@ -146,6 +146,14 @@ impl TagConfig {
         format!("{}{}{}", self.prefix, padded, self.suffix)
     }
 
+    /// Formats a tag with a custom label, ignoring the level's default label.
+    #[must_use]
+    pub fn format_with_label(&self, _level: Level, label: &str) -> String {
+        let transformed = self.transform.apply(label);
+        let padded = self.pad(&transformed);
+        format!("{}{}{}", self.prefix, padded, self.suffix)
+    }
+
     fn pad(&self, s: &str) -> String {
         let len = s.chars().count();
         if len >= self.min_width {

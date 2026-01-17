@@ -97,10 +97,33 @@ impl Logger {
             scope: scope.to_string(),
             message: msg.to_string(),
             values: FormatValues::new(),
+            label_override: None,
         };
 
         for output in &self.outputs {
             // Ignore output errors for now (logging shouldn't panic)
+            let _ = output.write(&record);
+        }
+    }
+
+    /// Logs a message with a custom label override.
+    ///
+    /// The `label` will be displayed instead of the level name (e.g., "SUCCESS"
+    /// instead of "INFO"), while still using `level` for filtering.
+    pub fn log_with_label(&self, level: Level, scope: &str, msg: &str, label: &str) {
+        if level < self.min_level {
+            return;
+        }
+
+        let record = LogRecord {
+            level,
+            scope: scope.to_string(),
+            message: msg.to_string(),
+            values: FormatValues::new(),
+            label_override: Some(label.to_string()),
+        };
+
+        for output in &self.outputs {
             let _ = output.write(&record);
         }
     }

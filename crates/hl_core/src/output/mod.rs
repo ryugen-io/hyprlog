@@ -6,6 +6,7 @@ mod terminal;
 pub use file::FileOutput;
 pub use terminal::TerminalOutput;
 
+use crate::tag::TagConfig;
 use crate::{Level, format::FormatValues};
 
 /// A log record ready for output.
@@ -15,6 +16,19 @@ pub struct LogRecord {
     pub scope: String,
     pub message: String,
     pub values: FormatValues,
+    /// Optional label override for custom display (e.g., "SUCCESS" instead of "INFO").
+    pub label_override: Option<String>,
+}
+
+impl LogRecord {
+    /// Returns the formatted tag string, using `label_override` if set.
+    #[must_use]
+    pub fn format_tag(&self, tag_config: &TagConfig) -> String {
+        self.label_override.as_ref().map_or_else(
+            || tag_config.format(self.level),
+            |label| tag_config.format_with_label(self.level, label),
+        )
+    }
 }
 
 /// Trait for log output backends.

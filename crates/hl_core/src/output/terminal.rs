@@ -115,8 +115,8 @@ impl TerminalOutput {
             .copied()
             .unwrap_or(Color::white());
 
-        // Format tag with color
-        let tag = self.tag_config.format(record.level);
+        // Format tag with color (uses label_override if set)
+        let tag = record.format_tag(&self.tag_config);
         let tag = if self.colors_enabled {
             format!("{}{}{}", level_color.fg_ansi(), tag, Color::RESET)
         } else {
@@ -203,6 +203,7 @@ mod tests {
             scope: "TEST".to_string(),
             message: "hello".to_string(),
             values: crate::format::FormatValues::new(),
+            label_override: None,
         };
 
         let formatted = output.format_record(&record);
@@ -222,6 +223,7 @@ mod tests {
             scope: "X".to_string(),
             message: "fail".to_string(),
             values: crate::format::FormatValues::new(),
+            label_override: None,
         };
 
         let formatted = output.format_record(&record);
