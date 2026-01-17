@@ -17,8 +17,8 @@ pub fn init() {
         build_internal_logger(&config)
     });
     if !was_init {
-        info("INTERNAL", "Initializing internal logger");
-        info("INTERNAL", "Internal logger ready");
+        debug("INTERNAL", "Initializing internal logger");
+        debug("INTERNAL", "Internal logger ready");
     }
 }
 
@@ -27,7 +27,7 @@ pub fn init_with_config(config: &Config) {
     let was_init = INTERNAL_LOGGER.get().is_some();
     INTERNAL_LOGGER.get_or_init(|| build_internal_logger(config));
     if !was_init {
-        info("INTERNAL", "Initializing internal logger");
+        debug("INTERNAL", "Initializing internal logger");
         if config.terminal.enabled {
             debug(
                 "INTERNAL",
@@ -43,7 +43,7 @@ pub fn init_with_config(config: &Config) {
                 &format!("File output: base_dir={}", config.file.base_dir),
             );
         }
-        info("INTERNAL", "Internal logger ready");
+        debug("INTERNAL", "Internal logger ready");
     }
 }
 
