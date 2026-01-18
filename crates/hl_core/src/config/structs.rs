@@ -47,6 +47,22 @@ impl Default for TerminalConfig {
     }
 }
 
+/// Shell configuration.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
+pub struct ShellConfig {
+    /// Prompt theme.
+    pub theme: String,
+}
+
+impl Default for ShellConfig {
+    fn default() -> Self {
+        Self {
+            theme: "dracula".to_string(),
+        }
+    }
+}
+
 /// File output configuration.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default)]

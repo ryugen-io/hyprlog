@@ -6,7 +6,7 @@ mod structs;
 pub use error::ConfigError;
 pub use structs::{
     CleanupConfig, FileConfig, GeneralConfig, IconsConfig, PresetConfig, RetentionConfig,
-    TagConfigFile, TerminalConfig,
+    ShellConfig, TagConfigFile, TerminalConfig,
 };
 
 use crate::fmt::{Alignment, Color, IconType, Transform};
@@ -25,6 +25,8 @@ pub struct Config {
     pub general: GeneralConfig,
     /// Terminal output settings.
     pub terminal: TerminalConfig,
+    /// Shell settings.
+    pub shell: ShellConfig,
     /// File output settings.
     pub file: FileConfig,
     /// Cleanup settings.

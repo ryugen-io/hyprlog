@@ -157,6 +157,12 @@ impl TerminalOutput {
 
 impl Output for TerminalOutput {
     fn write(&self, record: &LogRecord) -> Result<(), OutputError> {
+        // Raw mode: just output the message without formatting
+        if record.raw {
+            writeln!(io::stdout(), "{}", record.message)?;
+            return Ok(());
+        }
+
         let formatted = self.format_record(record);
 
         // Warn and Error go to stderr, others to stdout

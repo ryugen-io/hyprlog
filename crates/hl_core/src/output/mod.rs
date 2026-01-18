@@ -20,6 +20,8 @@ pub struct LogRecord {
     pub label_override: Option<String>,
     /// Optional app name override (uses logger default if None).
     pub app_name: Option<String>,
+    /// If true, output raw message without formatting (no tag, icon, scope).
+    pub raw: bool,
 }
 
 impl LogRecord {

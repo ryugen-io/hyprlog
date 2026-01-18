@@ -2,7 +2,7 @@
 
 use super::Logger;
 use crate::config::PresetConfig;
-use crate::fmt::{IconSet, TagConfig};
+use crate::fmt::{Color, IconSet, TagConfig};
 use crate::level::Level;
 use crate::output::{FileOutput, Output, TerminalOutput};
 use std::collections::HashMap;
@@ -108,6 +108,20 @@ impl TerminalBuilder {
     #[must_use]
     pub fn tag_config(mut self, config: TagConfig) -> Self {
         self.output = self.output.tag_config(config);
+        self
+    }
+
+    /// Sets a named color.
+    #[must_use]
+    pub fn color(mut self, name: impl Into<String>, color: Color) -> Self {
+        self.output = self.output.color(name, color);
+        self
+    }
+
+    /// Sets the color for a log level.
+    #[must_use]
+    pub fn level_color(mut self, level: Level, color: Color) -> Self {
+        self.output = self.output.level_color(level, color);
         self
     }
 

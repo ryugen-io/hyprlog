@@ -51,72 +51,12 @@ impl Logger {
         let mut output_count = 0;
 
         if config.terminal.enabled {
-            internal::debug(
-                "LOGGER",
-                &format!(
-                    "Terminal: colors={}, structure={}",
-                    config.terminal.colors, config.terminal.structure
-                ),
-            );
-            let mut icon_set = match config.parse_icon_type() {
-                crate::fmt::IconType::NerdFont => crate::fmt::IconSet::nerdfont(),
-                crate::fmt::IconType::Ascii => crate::fmt::IconSet::ascii(),
-                crate::fmt::IconType::None => crate::fmt::IconSet::none(),
-            };
-
-            // Apply overrides from config
-            let overrides = match config.parse_icon_type() {
-                crate::fmt::IconType::NerdFont => &config.icons.nerdfont,
-                crate::fmt::IconType::Ascii => &config.icons.ascii,
-                crate::fmt::IconType::None => &HashMap::new(),
-            };
-
-            for (level_str, icon) in overrides {
-                if let Ok(level) = level_str.parse::<Level>() {
-                    icon_set.set(level, icon);
-                } else {
-                    internal::warn(
-                        "LOGGER",
-                        &format!("Invalid level in icon config: {level_str}"),
-                    );
-                }
-            }
-            let tag_config = crate::fmt::TagConfig::new()
-                .prefix(&config.tag.prefix)
-                .suffix(&config.tag.suffix)
-                .transform(config.parse_transform())
-                .min_width(config.tag.min_width)
-                .alignment(config.parse_alignment());
-
-            builder = builder
-                .terminal()
-                .colors(config.terminal.colors)
-                .icons(icon_set)
-                .structure(&config.terminal.structure)
-                .tag_config(tag_config)
-                .done();
+            builder = Self::configure_terminal(builder, config);
             output_count += 1;
         }
 
         if config.file.enabled {
-            internal::debug(
-                "LOGGER",
-                &format!(
-                    "File: base_dir={}, app={}",
-                    config.file.base_dir,
-                    config.general.app_name.as_deref().unwrap_or(app_name)
-                ),
-            );
-            builder = builder
-                .file()
-                .base_dir(&config.file.base_dir)
-                .path_structure(&config.file.path_structure)
-                .filename_structure(&config.file.filename_structure)
-                .content_structure(&config.file.content_structure)
-                .timestamp_format(&config.file.timestamp_format)
-                .timestamp_format(&config.file.timestamp_format)
-                .app_name(config.general.app_name.as_deref().unwrap_or(app_name))
-                .done();
+            builder = Self::configure_file(builder, config, app_name);
             output_count += 1;
         }
 
@@ -135,6 +75,127 @@ impl Logger {
         builder.presets(config.presets.clone()).build()
     }
 
+    /// Configures terminal output from config.
+    fn configure_terminal(builder: LoggerBuilder, config: &crate::config::Config) -> LoggerBuilder {
+        internal::debug(
+            "LOGGER",
+            &format!(
+                "Terminal: colors={}, structure={}",
+                config.terminal.colors, config.terminal.structure
+            ),
+        );
+
+        let icon_set = Self::build_icon_set(config);
+        let tag_config = Self::build_tag_config(config);
+
+        let mut terminal = builder
+            .terminal()
+            .colors(config.terminal.colors)
+            .icons(icon_set)
+            .structure(&config.terminal.structure)
+            .tag_config(tag_config);
+
+        // Apply custom colors from config
+        for name in config.colors.keys() {
+            if let Some(color) = config.get_color(name) {
+                terminal = terminal.color(name, color);
+            }
+        }
+
+        // Apply level colors from config (e.g., colors.info = "#50fa7b")
+        for level in [
+            Level::Trace,
+            Level::Debug,
+            Level::Info,
+            Level::Warn,
+            Level::Error,
+        ] {
+            let level_name = level.as_str().to_lowercase();
+            if let Some(color) = config.get_color(&level_name) {
+                terminal = terminal.level_color(level, color);
+            }
+        }
+
+        terminal.done()
+    }
+
+    /// Builds icon set from config.
+    fn build_icon_set(config: &crate::config::Config) -> crate::fmt::IconSet {
+        let mut icon_set = match config.parse_icon_type() {
+            crate::fmt::IconType::NerdFont => crate::fmt::IconSet::nerdfont(),
+            crate::fmt::IconType::Ascii => crate::fmt::IconSet::ascii(),
+            crate::fmt::IconType::None => crate::fmt::IconSet::none(),
+        };
+
+        let overrides = match config.parse_icon_type() {
+            crate::fmt::IconType::NerdFont => &config.icons.nerdfont,
+            crate::fmt::IconType::Ascii => &config.icons.ascii,
+            crate::fmt::IconType::None => return icon_set,
+        };
+
+        for (level_str, icon) in overrides {
+            if let Ok(level) = level_str.parse::<Level>() {
+                icon_set.set(level, icon);
+            } else {
+                internal::warn(
+                    "LOGGER",
+                    &format!("Invalid level in icon config: {level_str}"),
+                );
+            }
+        }
+
+        icon_set
+    }
+
+    /// Builds tag config from config.
+    fn build_tag_config(config: &crate::config::Config) -> crate::fmt::TagConfig {
+        let mut tag_config = crate::fmt::TagConfig::new()
+            .prefix(&config.tag.prefix)
+            .suffix(&config.tag.suffix)
+            .transform(config.parse_transform())
+            .min_width(config.tag.min_width)
+            .alignment(config.parse_alignment());
+
+        for (level_str, label) in &config.tag.labels {
+            if let Ok(level) = level_str.parse::<Level>() {
+                tag_config = tag_config.label(level, label);
+            } else {
+                internal::warn(
+                    "LOGGER",
+                    &format!("Invalid level in tag.labels: {level_str}"),
+                );
+            }
+        }
+
+        tag_config
+    }
+
+    /// Configures file output from config.
+    fn configure_file(
+        builder: LoggerBuilder,
+        config: &crate::config::Config,
+        app_name: &str,
+    ) -> LoggerBuilder {
+        internal::debug(
+            "LOGGER",
+            &format!(
+                "File: base_dir={}, app={}",
+                config.file.base_dir,
+                config.general.app_name.as_deref().unwrap_or(app_name)
+            ),
+        );
+
+        builder
+            .file()
+            .base_dir(&config.file.base_dir)
+            .path_structure(&config.file.path_structure)
+            .filename_structure(&config.file.filename_structure)
+            .content_structure(&config.file.content_structure)
+            .timestamp_format(&config.file.timestamp_format)
+            .app_name(config.general.app_name.as_deref().unwrap_or(app_name))
+            .done()
+    }
+
     /// Logs a message at the given level.
     pub fn log(&self, level: Level, scope: &str, msg: &str) {
         if level < self.min_level {
@@ -148,6 +209,7 @@ impl Logger {
             values: FormatValues::new(),
             label_override: None,
             app_name: None,
+            raw: false,
         };
 
         for output in &self.outputs {
@@ -168,6 +230,7 @@ impl Logger {
             values: FormatValues::new(),
             label_override: Some(label.to_string()),
             app_name: None,
+            raw: false,
         };
 
         for output in &self.outputs {
@@ -188,6 +251,7 @@ impl Logger {
             values: FormatValues::new(),
             label_override: None,
             app_name: app_name.map(ToString::to_string),
+            raw: false,
         };
 
         for output in &self.outputs {
@@ -218,6 +282,25 @@ impl Logger {
     /// Logs an error message.
     pub fn error(&self, scope: &str, msg: &str) {
         self.log(Level::Error, scope, msg);
+    }
+
+    /// Outputs raw text without log formatting (no tag, icon, scope).
+    ///
+    /// Useful for list items, continuation lines, etc. where log prefixes would be noisy.
+    pub fn raw(&self, msg: &str) {
+        let record = LogRecord {
+            level: Level::Info,
+            scope: String::new(),
+            message: msg.to_string(),
+            values: FormatValues::new(),
+            label_override: None,
+            app_name: None,
+            raw: true,
+        };
+
+        for output in &self.outputs {
+            let _ = output.write(&record);
+        }
     }
 
     /// Logs a message using a preset.

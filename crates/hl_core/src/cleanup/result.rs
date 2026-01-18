@@ -94,7 +94,7 @@ impl CleanupResult {
                 &format!("Would delete {count} file(s), freeing {size}"),
             );
             for path in &self.would_delete {
-                logger.info("CLEANUP", &format!("  {path}"));
+                logger.raw(&format!("  {path}"));
             }
         }
 
@@ -106,7 +106,7 @@ impl CleanupResult {
                 &format!("Would compress {count} file(s), saving ~{size}"),
             );
             for path in &self.would_compress {
-                logger.info("CLEANUP", &format!("  {path}"));
+                logger.raw(&format!("  {path}"));
             }
         }
 
@@ -119,7 +119,7 @@ impl CleanupResult {
             let size = format_size(self.freed);
             logger.info("CLEANUP", &format!("Deleted {count} file(s), freed {size}"));
             for path in &self.deleted {
-                logger.info("CLEANUP", &format!("  {path}"));
+                logger.raw(&format!("  {path}"));
             }
         }
 
@@ -131,7 +131,7 @@ impl CleanupResult {
                 &format!("Compressed {count} file(s), saved {size}"),
             );
             for path in &self.compressed {
-                logger.info("CLEANUP", &format!("  {path}"));
+                logger.raw(&format!("  {path}"));
             }
         }
 

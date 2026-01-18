@@ -16,6 +16,7 @@ mod util;
 
 use commands::{
     cmd_cleanup, cmd_json, cmd_log, cmd_log_shorthand, cmd_preset, cmd_presets, cmd_stats,
+    cmd_themes,
 };
 use hl_core::{Config, internal};
 use std::process::ExitCode;
@@ -66,6 +67,7 @@ fn main() -> ExitCode {
         "presets" => cmd_presets(&config, &logger),
         "stats" => cmd_stats(&args_str[1..], &config),
         "cleanup" => cmd_cleanup(&args_str[1..], &config),
+        "themes" => cmd_themes(&args_str[1..], &logger),
         // Shorthand: hyprlog <level> <scope> <msg>
         "trace" | "debug" | "info" | "warn" | "error" => cmd_log_shorthand(&args_str, &logger),
         // Shorthand with app: hyprlog <app> <level> <scope> <msg>

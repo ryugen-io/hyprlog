@@ -12,6 +12,7 @@ fn format_tag_without_override() {
         values: FormatValues::new(),
         label_override: None,
         app_name: None,
+        raw: false,
     };
 
     let tag_config = TagConfig::default();
@@ -29,6 +30,7 @@ fn format_tag_with_override() {
         values: FormatValues::new(),
         label_override: Some("SUCCESS".to_string()),
         app_name: None,
+        raw: false,
     };
 
     let tag_config = TagConfig::default();

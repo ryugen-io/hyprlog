@@ -5,9 +5,11 @@ mod json;
 mod log;
 mod preset;
 mod stats;
+mod themes;
 
 pub use cleanup::cmd_cleanup;
 pub use json::cmd_json;
 pub use log::{cmd_log, cmd_log_shorthand};
 pub use preset::{cmd_preset, cmd_presets};
 pub use stats::cmd_stats;
+pub use themes::cmd_themes;

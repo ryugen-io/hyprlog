@@ -1,7 +1,6 @@
 //! Log file statistics types.
 
 use super::format_size;
-use crate::level::Level;
 use crate::logger::Logger;
 use chrono::NaiveDate;
 
@@ -46,11 +45,12 @@ impl LogStats {
                 } else {
                     format!("{} days", file.age_days)
                 };
-                logger.log(
-                    Level::Info,
-                    "STATS",
-                    &format!("  {} ({}, {})", file.path, format_size(file.size), age),
-                );
+                logger.raw(&format!(
+                    "  {} ({}, {})",
+                    file.path,
+                    format_size(file.size),
+                    age
+                ));
             }
         }
     }

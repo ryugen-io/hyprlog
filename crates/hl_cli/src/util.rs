@@ -51,6 +51,7 @@ Usage:
   hyprlog preset <name>                     Run a preset
   hyprlog presets                           List available presets
   hyprlog stats [--app <name>]              Show log statistics
+  hyprlog themes [list|preview]             List or preview prompt themes
   hyprlog cleanup [options]                 Clean up old logs
     --older-than <N>d                       Delete files older than N days
     --before <DATE>                         Delete files modified before DATE (YYYY-MM-DD)

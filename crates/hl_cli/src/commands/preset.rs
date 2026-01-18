@@ -39,10 +39,10 @@ pub fn cmd_presets(config: &Config, logger: &Logger) -> ExitCode {
         }
 
         for (app, mut presets) in groups {
-            logger.info("PRESETS", &format!("[{app}]"));
+            logger.raw(&format!("  [{app}]"));
             presets.sort_unstable();
             for preset in presets {
-                logger.info("PRESETS", &format!("  {preset}"));
+                logger.raw(&format!("    {preset}"));
             }
         }
     }
