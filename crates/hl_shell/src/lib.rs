@@ -1,6 +1,6 @@
 //! hyprlog interactive shell.
 
-use hl_common::{OutputFormatter, PresetRunner};
+use hl_common::PresetRunner;
 use hl_core::{CleanupOptions, Config, Level, Logger, cleanup, internal, stats};
 use rustyline::error::ReadlineError;
 use rustyline::history::DefaultHistory;
@@ -27,7 +27,10 @@ pub fn run(config: &Config) -> Result<(), String> {
     }
 
     internal::info("SHELL", "Starting interactive shell");
-    println!("hyprlog shell - type 'help' for commands, 'quit' to exit");
+    logger.info(
+        "SHELL",
+        "hyprlog shell - type 'help' for commands, 'quit' to exit",
+    );
 
     loop {
         match rl.readline(PROMPT) {
@@ -94,11 +97,11 @@ fn handle_command(line: &str, config: &Config, logger: &Logger) -> bool {
             true
         }
         "stats" => {
-            cmd_stats(config);
+            cmd_stats(config, logger);
             true
         }
         "cleanup" => {
-            cmd_cleanup(&parts, config);
+            cmd_cleanup(&parts, config, logger);
             true
         }
         _ => {
@@ -147,9 +150,9 @@ fn cmd_presets(config: &Config, logger: &Logger) {
     let runner = PresetRunner::new(config, logger);
     let list = runner.list();
     if list.is_empty() {
-        println!("No presets defined");
+        logger.info("PRESETS", "No presets defined");
     } else {
-        println!("Available presets:");
+        logger.info("PRESETS", "Available presets:");
         let mut groups: std::collections::BTreeMap<String, Vec<&str>> =
             std::collections::BTreeMap::new();
 
@@ -159,27 +162,24 @@ fn cmd_presets(config: &Config, logger: &Logger) {
         }
 
         for (app, mut presets) in groups {
-            println!("[{app}]");
+            logger.info("PRESETS", &format!("[{app}]"));
             presets.sort_unstable();
             for preset in presets {
-                println!("  {preset}");
+                logger.info("PRESETS", &format!("  {preset}"));
             }
         }
     }
 }
 
-fn cmd_stats(config: &Config) {
+fn cmd_stats(config: &Config, logger: &Logger) {
     let base_dir = expand_path(&config.file.base_dir);
     match stats(&base_dir, None) {
-        Ok(s) => {
-            let formatter = OutputFormatter::new().colors(config.terminal.colors);
-            println!("{}", formatter.format_stats(&s));
-        }
+        Ok(s) => s.log(logger),
         Err(e) => internal::error("STATS", &format!("{e}")),
     }
 }
 
-fn cmd_cleanup(parts: &[&str], config: &Config) {
+fn cmd_cleanup(parts: &[&str], config: &Config, logger: &Logger) {
     let dry_run = parts.contains(&"--dry-run");
     let all = parts.contains(&"--all");
 
@@ -211,8 +211,7 @@ fn cmd_cleanup(parts: &[&str], config: &Config) {
             for (path, err) in &result.failed {
                 internal::warn("CLEANUP", &format!("Failed to process {path}: {err}"));
             }
-            let formatter = OutputFormatter::new().colors(config.terminal.colors);
-            println!("{}", formatter.format_cleanup(&result, dry_run));
+            result.log(logger, dry_run);
         }
         Err(e) => internal::error("CLEANUP", &format!("{e}")),
     }

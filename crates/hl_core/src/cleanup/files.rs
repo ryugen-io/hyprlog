@@ -3,6 +3,7 @@
 use super::error::CleanupError;
 use super::stats::LogFileInfo;
 use crate::internal;
+use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 use std::time::SystemTime;
@@ -18,8 +19,16 @@ pub(super) fn collect_log_files(
         &format!("Collecting log files from {}", dir.display()),
     );
     let mut files = Vec::new();
-    collect_log_files_recursive(dir, now, app_filter, &mut files)?;
-    internal::debug("CLEANUP", &format!("Found {} log files", files.len()));
+    let mut folders = HashSet::new();
+    collect_log_files_recursive(dir, now, app_filter, &mut files, &mut folders)?;
+    internal::debug(
+        "CLEANUP",
+        &format!(
+            "Found {} log files in {} folders",
+            files.len(),
+            folders.len()
+        ),
+    );
     Ok(files)
 }
 
@@ -28,6 +37,7 @@ fn collect_log_files_recursive(
     now: SystemTime,
     app_filter: Option<&str>,
     files: &mut Vec<LogFileInfo>,
+    folders: &mut HashSet<String>,
 ) -> Result<(), CleanupError> {
     if !dir.is_dir() {
         return Ok(());
@@ -42,13 +52,13 @@ fn collect_log_files_recursive(
                 let dir_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
                 if dir_name == app {
                     // Found app dir, collect all files within
-                    collect_log_files_recursive(&path, now, None, files)?;
+                    collect_log_files_recursive(&path, now, None, files, folders)?;
                 } else {
                     // Keep searching
-                    collect_log_files_recursive(&path, now, app_filter, files)?;
+                    collect_log_files_recursive(&path, now, app_filter, files, folders)?;
                 }
             } else {
-                collect_log_files_recursive(&path, now, None, files)?;
+                collect_log_files_recursive(&path, now, None, files, folders)?;
             }
         } else if app_filter.is_none() && path.extension().is_some_and(|e| e == "log") {
             if let Ok(meta) = fs::metadata(&path) {
@@ -63,6 +73,11 @@ fn collect_log_files_recursive(
                     let timestamp = i64::try_from(duration.as_secs()).ok()?;
                     chrono::DateTime::from_timestamp(timestamp, 0).map(|dt| dt.naive_utc().date())
                 });
+
+                // Track parent folder
+                if let Some(parent) = path.parent() {
+                    folders.insert(parent.display().to_string());
+                }
 
                 internal::trace("CLEANUP", &format!("Found: {}", path.display()));
                 files.push(LogFileInfo {
