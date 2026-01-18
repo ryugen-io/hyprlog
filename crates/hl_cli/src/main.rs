@@ -19,7 +19,7 @@ use commands::{
 };
 use hl_core::{Config, internal};
 use std::process::ExitCode;
-use util::{build_logger, print_help};
+use util::{build_logger, parse_level, print_help};
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -66,8 +66,12 @@ fn main() -> ExitCode {
         "presets" => cmd_presets(&config, &logger),
         "stats" => cmd_stats(&args_str[1..], &config),
         "cleanup" => cmd_cleanup(&args_str[1..], &config),
-        // Shorthand: hyprlog info SCOPE msg
+        // Shorthand: hyprlog <level> <scope> <msg>
         "trace" | "debug" | "info" | "warn" | "error" => cmd_log_shorthand(&args_str, &logger),
+        // Shorthand with app: hyprlog <app> <level> <scope> <msg>
+        _ if args_str.len() >= 2 && parse_level(args_str[1]).is_some() => {
+            cmd_log_shorthand(&args_str, &logger)
+        }
         _ => {
             internal::error("CLI", &format!("Unknown command: {}", args_str[0]));
             internal::info("CLI", "Run 'hyprlog help' for usage");

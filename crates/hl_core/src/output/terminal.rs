@@ -148,7 +148,8 @@ impl TerminalOutput {
             .icon(&icon)
             .scope(&scope)
             .msg(&msg)
-            .level(record.level.as_str());
+            .level(record.level.as_str())
+            .app(record.app_name.as_deref().unwrap_or("hyprlog"));
 
         self.template.render(&values)
     }

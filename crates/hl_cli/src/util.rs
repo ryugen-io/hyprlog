@@ -44,25 +44,25 @@ pub fn print_help() {
         "hyprlog - Flexible logging from the command line
 
 Usage:
-  hyprlog                              Enter interactive shell
-  hyprlog log <level> <scope> <msg>    Log a message
-  hyprlog <level> <scope> <msg>        Shorthand logging
-  hyprlog json [<json>]                Log from JSON (or stdin with -)
-  hyprlog preset <name>                Run a preset
-  hyprlog presets                      List available presets
-  hyprlog stats [--app <name>]         Show log statistics
-  hyprlog cleanup [options]            Clean up old logs
-    --older-than <N>d                  Delete files older than N days
-    --before <DATE>                    Delete files modified before DATE (YYYY-MM-DD)
-    --after <DATE>                     Delete files modified after DATE (YYYY-MM-DD)
-    --max-size <size>                  Keep total size under limit (e.g., 500M, 1G)
-    --keep-last <N>                    Always keep the N most recent files
-    --compress                         Compress files (gzip) instead of deleting
-    --app <name>                       Filter by app name
-    --all                              Delete all files
-    --dry-run                          Show what would be done
-  hyprlog help                         Show this help
-  hyprlog version                      Show version
+  hyprlog                                   Enter interactive shell
+  hyprlog log <app> <level> <scope> <msg>   Log a message for specific app
+  hyprlog [<app>] <level> <scope> <msg>     Shorthand (app defaults to 'hyprlog')
+  hyprlog json [<json>]                     Log from JSON (or stdin with -)
+  hyprlog preset <name>                     Run a preset
+  hyprlog presets                           List available presets
+  hyprlog stats [--app <name>]              Show log statistics
+  hyprlog cleanup [options]                 Clean up old logs
+    --older-than <N>d                       Delete files older than N days
+    --before <DATE>                         Delete files modified before DATE (YYYY-MM-DD)
+    --after <DATE>                          Delete files modified after DATE (YYYY-MM-DD)
+    --max-size <size>                       Keep total size under limit (e.g., 500M, 1G)
+    --keep-last <N>                         Always keep the N most recent files
+    --compress                              Compress files (gzip) instead of deleting
+    --app <name>                            Filter by app name
+    --all                                   Delete all files
+    --dry-run                               Show what would be done
+  hyprlog help                              Show this help
+  hyprlog version                           Show version
 
 Config defaults (in ~/.config/hypr/hyprlog.conf):
   [cleanup]
@@ -74,7 +74,8 @@ Levels: trace, debug, info, warn, error
 
 Examples:
   hyprlog info INIT \"Application started\"
-  hyprlog log error NET \"Connection failed\"
+  hyprlog myapp info INIT \"Application started\"
+  hyprlog log myapp error NET \"Connection failed\"
   hyprlog cleanup --dry-run
   hyprlog cleanup --compress --older-than 7d --keep-last 5
   hyprlog cleanup --before 2024-01-01 --dry-run

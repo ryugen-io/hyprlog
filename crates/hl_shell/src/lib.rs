@@ -137,26 +137,41 @@ fn handle_command(line: &str, config: &Config, logger: &Logger) -> bool {
 }
 
 fn cmd_log(parts: &[&str], logger: &Logger) {
-    if parts.len() < 4 {
-        internal::warn("SHELL", "Usage: log <level> <scope> <message>");
+    // parts[0] = "log", parts[1] = app, parts[2] = level, parts[3] = scope, parts[4..] = message
+    if parts.len() < 5 {
+        internal::warn("SHELL", "Usage: log <app> <level> <scope> <message>");
         return;
     }
-    let Some(level) = parse_level(parts[1]) else {
-        internal::error("SHELL", &format!("Invalid level: {}", parts[1]));
+    let app = parts[1];
+    let Some(level) = parse_level(parts[2]) else {
+        internal::error("SHELL", &format!("Invalid level: {}", parts[2]));
         return;
     };
-    logger.log(level, parts[2], &parts[3..].join(" "));
+    logger.log_full(level, parts[3], &parts[4..].join(" "), Some(app));
 }
 
 fn cmd_log_shorthand(parts: &[&str], logger: &Logger) {
+    // If parts[1] is a valid level, then parts[0] is app name
+    // Otherwise parts[0] is level (and app defaults to "hyprlog")
     if parts.len() < 3 {
         internal::warn("SHELL", &format!("Usage: {} <scope> <message>", parts[0]));
         return;
     }
-    let Some(level) = parse_level(parts[0]) else {
-        return;
-    };
-    logger.log(level, parts[1], &parts[2..].join(" "));
+
+    // Check if second arg is a level (meaning first arg is app name)
+    if parts.len() >= 4 && parse_level(parts[1]).is_some() {
+        // parts[0] = app, parts[1] = level, parts[2] = scope, parts[3..] = message
+        let app = parts[0];
+        let level = parse_level(parts[1]).unwrap();
+        logger.log_full(level, parts[2], &parts[3..].join(" "), Some(app));
+    } else {
+        // parts[0] = level, parts[1] = scope, parts[2..] = message
+        let Some(level) = parse_level(parts[0]) else {
+            internal::error("SHELL", &format!("Invalid level: {}", parts[0]));
+            return;
+        };
+        logger.log(level, parts[1], &parts[2..].join(" "));
+    }
 }
 
 fn cmd_preset(parts: &[&str], config: &Config, logger: &Logger) {
@@ -255,18 +270,20 @@ fn parse_level(s: &str) -> Option<Level> {
 fn print_help() {
     println!(
         "Commands:
-  log <level> <scope> <message>  Log a message
-  <level> <scope> <message>      Shorthand (trace, debug, info, warn, error)
-  preset <name>                  Run a preset
-  presets                        List available presets
-  stats                          Show log statistics
-  cleanup [options]              Clean up old logs
-    --older-than <days>          Delete files older than N days
-    --max-size <size>            Keep total size under limit
-    --all                        Delete all files
-    --dry-run                    Show what would be deleted
-  help, ?                        Show this help
-  quit, exit, q                  Exit shell"
+  log <app> <level> <scope> <message>   Log a message for specific app
+  [<app>] <level> <scope> <message>     Shorthand (app defaults to 'hyprlog')
+  preset <name>                         Run a preset
+  presets                               List available presets
+  stats                                 Show log statistics
+  cleanup [options]                     Clean up old logs
+    --older-than <days>                 Delete files older than N days
+    --max-size <size>                   Keep total size under limit
+    --all                               Delete all files
+    --dry-run                           Show what would be deleted
+  help, ?                               Show this help
+  quit, exit, q                         Exit shell
+
+Levels: trace, debug, info, warn, error"
     );
 }
 
