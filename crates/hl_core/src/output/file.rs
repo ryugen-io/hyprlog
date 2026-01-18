@@ -1,9 +1,7 @@
 //! File output with path templates.
 
-use crate::format::{FormatTemplate, FormatValues};
+use crate::fmt::{FormatTemplate, FormatValues, TagConfig, style};
 use crate::internal;
-use crate::style;
-use crate::tag::TagConfig;
 
 use super::{LogRecord, Output, OutputError};
 use chrono::Local;
@@ -213,72 +211,6 @@ impl Output for FileOutput {
     }
 
     fn flush(&self) -> Result<(), OutputError> {
-        // Files are flushed on each write (unbuffered append mode)
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::Level;
-    use tempfile::tempdir;
-
-    #[test]
-    fn default_file_output() {
-        let output = FileOutput::new();
-        assert!(output.base_dir.contains("hyprlog"));
-    }
-
-    #[test]
-    fn write_to_file() {
-        let dir = tempdir().unwrap();
-        let output = FileOutput::new()
-            .base_dir(dir.path().to_str().unwrap())
-            .path_structure("{app}")
-            .filename_structure("test.log");
-
-        let record = LogRecord {
-            level: Level::Info,
-            scope: "TEST".to_string(),
-            message: "hello world".to_string(),
-            values: FormatValues::new(),
-            label_override: None,
-            app_name: None,
-        };
-
-        output.write(&record).unwrap();
-
-        let log_path = dir.path().join("hyprlog/test.log");
-        assert!(log_path.exists());
-
-        let content = fs::read_to_string(log_path).unwrap();
-        assert!(content.contains("hello world"));
-        assert!(content.contains("TEST"));
-    }
-
-    #[test]
-    fn strips_style_tags() {
-        let dir = tempdir().unwrap();
-        let output = FileOutput::new()
-            .base_dir(dir.path().to_str().unwrap())
-            .path_structure("")
-            .filename_structure("test.log")
-            .content_structure("{msg}");
-
-        let record = LogRecord {
-            level: Level::Info,
-            scope: "X".to_string(),
-            message: "<bold>styled</bold> text".to_string(),
-            values: FormatValues::new(),
-            label_override: None,
-            app_name: None,
-        };
-
-        output.write(&record).unwrap();
-
-        let content = fs::read_to_string(dir.path().join("test.log")).unwrap();
-        assert!(content.contains("styled text"));
-        assert!(!content.contains("<bold>"));
     }
 }

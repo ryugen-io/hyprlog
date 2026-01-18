@@ -1,9 +1,7 @@
 //! Tests for `label_override` functionality.
 
-use hl_core::Level;
-use hl_core::format::FormatValues;
 use hl_core::output::LogRecord;
-use hl_core::tag::TagConfig;
+use hl_core::{FormatValues, Level, TagConfig};
 
 #[test]
 fn format_tag_without_override() {

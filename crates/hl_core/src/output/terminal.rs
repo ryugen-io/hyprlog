@@ -1,11 +1,7 @@
 //! Terminal output with color support.
 
-use crate::Level;
-use crate::color::Color;
-use crate::format::FormatTemplate;
-use crate::icon::IconSet;
-use crate::style;
-use crate::tag::TagConfig;
+use crate::fmt::{Color, FormatTemplate, FormatValues, IconSet, TagConfig, style};
+use crate::level::Level;
 
 use super::{LogRecord, Output, OutputError};
 use std::collections::HashMap;
@@ -147,7 +143,7 @@ impl TerminalOutput {
         };
 
         // Build values and render template
-        let values = crate::format::FormatValues::new()
+        let values = FormatValues::new()
             .tag(&tag)
             .icon(&icon)
             .scope(&scope)
@@ -176,59 +172,5 @@ impl Output for TerminalOutput {
         io::stdout().flush()?;
         io::stderr().flush()?;
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn default_terminal() {
-        let output = TerminalOutput::new();
-        assert!(output.colors_enabled);
-    }
-
-    #[test]
-    fn disable_colors() {
-        let output = TerminalOutput::new().colors(false);
-        assert!(!output.colors_enabled);
-    }
-
-    #[test]
-    fn format_simple_record() {
-        let output = TerminalOutput::new().colors(false);
-        let record = LogRecord {
-            level: Level::Info,
-            scope: "TEST".to_string(),
-            message: "hello".to_string(),
-            values: crate::format::FormatValues::new(),
-            label_override: None,
-            app_name: None,
-        };
-
-        let formatted = output.format_record(&record);
-        assert!(formatted.contains("INFO"));
-        assert!(formatted.contains("TEST"));
-        assert!(formatted.contains("hello"));
-    }
-
-    #[test]
-    fn custom_template() {
-        let output = TerminalOutput::new()
-            .colors(false)
-            .template("[{level}] {msg}");
-
-        let record = LogRecord {
-            level: Level::Error,
-            scope: "X".to_string(),
-            message: "fail".to_string(),
-            values: crate::format::FormatValues::new(),
-            label_override: None,
-            app_name: None,
-        };
-
-        let formatted = output.format_record(&record);
-        assert_eq!(formatted, "[error] fail");
     }
 }

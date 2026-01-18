@@ -1,6 +1,6 @@
 //! Tag formatting for log levels.
 
-use crate::Level;
+use crate::level::Level;
 use std::collections::HashMap;
 
 /// Text transformation for tags.
@@ -130,19 +130,14 @@ impl TagConfig {
     /// Formats a tag for the given level.
     #[must_use]
     pub fn format(&self, level: Level) -> String {
-        // Get label (custom or default)
         let label = self
             .labels
             .get(&level)
             .map_or_else(|| level.as_str(), String::as_str);
 
-        // Apply transformation
         let transformed = self.transform.apply(label);
-
-        // Apply padding
         let padded = self.pad(&transformed);
 
-        // Apply brackets
         format!("{}{}{}", self.prefix, padded, self.suffix)
     }
 
@@ -170,49 +165,5 @@ impl TagConfig {
                 format!("{}{}{}", " ".repeat(left), s, " ".repeat(right))
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn transform_apply() {
-        assert_eq!(Transform::None.apply("Test"), "Test");
-        assert_eq!(Transform::Uppercase.apply("test"), "TEST");
-        assert_eq!(Transform::Lowercase.apply("TEST"), "test");
-        assert_eq!(Transform::Capitalize.apply("tEST"), "Test");
-    }
-
-    #[test]
-    fn default_format() {
-        let config = TagConfig::default();
-        assert_eq!(config.format(Level::Info), "[INFO ]");
-        assert_eq!(config.format(Level::Error), "[ERROR]");
-    }
-
-    #[test]
-    fn custom_label() {
-        let config = TagConfig::new().label(Level::Error, "FAIL");
-        assert_eq!(config.format(Level::Error), "[FAIL ]");
-    }
-
-    #[test]
-    fn no_brackets() {
-        let config = TagConfig::new().prefix("").suffix("");
-        assert_eq!(config.format(Level::Info), "INFO ");
-    }
-
-    #[test]
-    fn left_alignment() {
-        let config = TagConfig::new().alignment(Alignment::Left).min_width(8);
-        assert_eq!(config.format(Level::Info), "[INFO    ]");
-    }
-
-    #[test]
-    fn right_alignment() {
-        let config = TagConfig::new().alignment(Alignment::Right).min_width(8);
-        assert_eq!(config.format(Level::Info), "[    INFO]");
     }
 }

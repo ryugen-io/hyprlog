@@ -6,8 +6,8 @@ mod terminal;
 pub use file::FileOutput;
 pub use terminal::TerminalOutput;
 
-use crate::tag::TagConfig;
-use crate::{Level, format::FormatValues};
+use crate::fmt::{FormatValues, TagConfig};
+use crate::level::Level;
 
 /// A log record ready for output.
 #[derive(Debug, Clone)]

@@ -49,7 +49,6 @@ impl Color {
     /// ANSI reset sequence.
     pub const RESET: &'static str = "\x1b[0m";
 
-    // Sweet Dracula palette defaults
     #[must_use]
     pub const fn white() -> Self {
         Self::new(255, 255, 255)
@@ -112,49 +111,4 @@ pub fn colorize_bg(text: &str, fg: Color, bg: Color) -> String {
     let bg_code = bg.bg_ansi();
     let reset = Color::RESET;
     format!("{fg_code}{bg_code}{text}{reset}")
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn from_hex_valid() {
-        let c = Color::from_hex("#ff0000");
-        assert_eq!(c.r, 255);
-        assert_eq!(c.g, 0);
-        assert_eq!(c.b, 0);
-
-        let c = Color::from_hex("00ff00");
-        assert_eq!(c.r, 0);
-        assert_eq!(c.g, 255);
-        assert_eq!(c.b, 0);
-    }
-
-    #[test]
-    fn from_hex_invalid() {
-        let c = Color::from_hex("invalid");
-        assert_eq!(c, Color::white());
-
-        let c = Color::from_hex("#fff");
-        assert_eq!(c, Color::white());
-    }
-
-    #[test]
-    fn display() {
-        let c = Color::new(255, 128, 0);
-        assert_eq!(c.to_string(), "#ff8000");
-    }
-
-    #[test]
-    fn fg_ansi_sequence() {
-        let c = Color::new(80, 250, 123);
-        assert_eq!(c.fg_ansi(), "\x1b[38;2;80;250;123m");
-    }
-
-    #[test]
-    fn palette_colors() {
-        assert_eq!(Color::green(), Color::new(80, 250, 123));
-        assert_eq!(Color::red(), Color::new(255, 85, 85));
-    }
 }

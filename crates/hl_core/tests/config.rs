@@ -1,6 +1,6 @@
 //! Tests for configuration functionality.
 
-use hl_core::tag::Transform;
+use hl_core::Transform;
 use hl_core::{Config, Level};
 
 #[test]

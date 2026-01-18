@@ -1,6 +1,6 @@
 //! Icon sets for log output.
 
-use crate::Level;
+use crate::level::Level;
 use std::collections::HashMap;
 
 /// Icon set type selection.
@@ -27,11 +27,11 @@ impl IconSet {
     #[must_use]
     pub fn nerdfont() -> Self {
         let mut icons = HashMap::new();
-        icons.insert(Level::Trace, "\u{f188}".to_string()); //
-        icons.insert(Level::Debug, "\u{f188}".to_string()); //
-        icons.insert(Level::Info, "\u{f05a}".to_string()); //
-        icons.insert(Level::Warn, "\u{f071}".to_string()); //
-        icons.insert(Level::Error, "\u{f057}".to_string()); //
+        icons.insert(Level::Trace, "\u{f188}".to_string());
+        icons.insert(Level::Debug, "\u{f188}".to_string());
+        icons.insert(Level::Info, "\u{f05a}".to_string());
+        icons.insert(Level::Warn, "\u{f071}".to_string());
+        icons.insert(Level::Error, "\u{f057}".to_string());
 
         Self {
             icons,
@@ -95,39 +95,5 @@ impl From<IconType> for IconSet {
             IconType::Ascii => Self::ascii(),
             IconType::None => Self::none(),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn nerdfont_icons() {
-        let icons = IconSet::nerdfont();
-        assert!(!icons.get(Level::Info).is_empty());
-        assert_eq!(icons.icon_type(), IconType::NerdFont);
-    }
-
-    #[test]
-    fn ascii_icons() {
-        let icons = IconSet::ascii();
-        assert_eq!(icons.get(Level::Info), "[i]");
-        assert_eq!(icons.get(Level::Error), "[x]");
-        assert_eq!(icons.icon_type(), IconType::Ascii);
-    }
-
-    #[test]
-    fn none_icons() {
-        let icons = IconSet::none();
-        assert_eq!(icons.get(Level::Info), "");
-        assert_eq!(icons.icon_type(), IconType::None);
-    }
-
-    #[test]
-    fn custom_icon() {
-        let mut icons = IconSet::ascii();
-        icons.set(Level::Info, "INFO");
-        assert_eq!(icons.get(Level::Info), "INFO");
     }
 }

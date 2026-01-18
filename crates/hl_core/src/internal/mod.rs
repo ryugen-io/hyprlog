@@ -2,7 +2,10 @@
 //!
 //! hyprlog uses its own Logger for internal messages.
 
-use crate::{Config, IconSet, Level, Logger};
+use crate::config::Config;
+use crate::fmt::IconSet;
+use crate::level::Level;
+use crate::logger::Logger;
 use std::sync::OnceLock;
 
 static INTERNAL_LOGGER: OnceLock<Logger> = OnceLock::new();

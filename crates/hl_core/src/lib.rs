@@ -25,25 +25,20 @@
 //! ```
 
 pub mod cleanup;
-pub mod color;
 pub mod config;
-pub mod format;
-pub mod icon;
+pub mod fmt;
 pub mod internal;
 pub mod level;
 pub mod logger;
 pub mod output;
-pub mod style;
-pub mod tag;
 
 // Re-exports for convenience
 pub use cleanup::{
-    CleanupOptions, CleanupResult, LogFileInfo, LogStats, cleanup, format_size, parse_size, stats,
+    CleanupError, CleanupOptions, CleanupResult, LogFileInfo, LogStats, cleanup, format_size,
+    parse_size, stats,
 };
-pub use color::Color;
 pub use config::Config;
-pub use icon::{IconSet, IconType};
+pub use fmt::{Alignment, Color, FormatValues, IconSet, IconType, TagConfig, Transform};
 pub use level::Level;
 pub use logger::{Logger, LoggerBuilder};
 pub use output::{FileOutput, Output, OutputError, TerminalOutput};
-pub use tag::{Alignment, TagConfig, Transform};

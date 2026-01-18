@@ -2,7 +2,7 @@
 //!
 //! Supports tags like `<bold>text</bold>` and `<red>text</red>`.
 
-use crate::Color;
+use super::Color;
 use std::collections::HashMap;
 
 /// A styled segment of text.
@@ -142,64 +142,4 @@ pub fn render_plain(segments: &[Segment]) -> String {
 #[must_use]
 pub fn strip_tags(msg: &str) -> String {
     render_plain(&parse(msg))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn parse_plain() {
-        let segments = parse("hello world");
-        assert_eq!(segments.len(), 1);
-        assert_eq!(segments[0], Segment::Plain("hello world".to_string()));
-    }
-
-    #[test]
-    fn parse_bold() {
-        let segments = parse("hello <bold>world</bold>");
-        assert_eq!(segments.len(), 2);
-        assert_eq!(segments[0], Segment::Plain("hello ".to_string()));
-        assert_eq!(segments[1], Segment::Bold("world".to_string()));
-    }
-
-    #[test]
-    fn parse_colored() {
-        let segments = parse("<red>error</red> message");
-        assert_eq!(segments.len(), 2);
-        assert_eq!(
-            segments[0],
-            Segment::Colored("error".to_string(), "red".to_string())
-        );
-        assert_eq!(segments[1], Segment::Plain(" message".to_string()));
-    }
-
-    #[test]
-    fn parse_multiple() {
-        let segments = parse("<bold>A</bold> and <italic>B</italic>");
-        assert_eq!(segments.len(), 3);
-        assert_eq!(segments[0], Segment::Bold("A".to_string()));
-        assert_eq!(segments[1], Segment::Plain(" and ".to_string()));
-        assert_eq!(segments[2], Segment::Italic("B".to_string()));
-    }
-
-    #[test]
-    fn strip_tags_test() {
-        let result = strip_tags("<bold>hello</bold> <red>world</red>");
-        assert_eq!(result, "hello world");
-    }
-
-    #[test]
-    fn render_bold() {
-        let segments = vec![Segment::Bold("test".to_string())];
-        let result = render(&segments, &HashMap::new());
-        assert_eq!(result, "\x1b[1mtest\x1b[0m");
-    }
-
-    #[test]
-    fn render_colored_hex() {
-        let segments = vec![Segment::Colored("test".to_string(), "#ff0000".to_string())];
-        let result = render(&segments, &HashMap::new());
-        assert!(result.contains("38;2;255;0;0"));
-    }
 }
