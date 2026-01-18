@@ -5,9 +5,32 @@ use hl_core::{CleanupOptions, Config, Level, Logger, cleanup, internal, stats};
 use rustyline::error::ReadlineError;
 use rustyline::history::DefaultHistory;
 use rustyline::{DefaultEditor, Editor};
+use std::fmt::Write;
 use std::path::PathBuf;
 
-const PROMPT: &str = "hyprlog> ";
+/// Dracula gradient colors for the prompt.
+const GRADIENT: &[(u8, u8, u8)] = &[
+    (255, 85, 85),   // #ff5555 red
+    (255, 184, 108), // #ffb86c orange
+    (241, 250, 140), // #f1fa8c yellow
+    (80, 250, 123),  // #50fa7b green
+    (139, 233, 253), // #8be9fd cyan
+    (189, 147, 249), // #bd93f9 purple
+    (255, 121, 198), // #ff79c6 pink
+    (255, 85, 85),   // #ff5555 red (for >)
+];
+
+/// Builds the gradient-colored prompt.
+fn build_prompt() -> String {
+    let chars = ['h', 'y', 'p', 'r', 'l', 'o', 'g', '>'];
+    let mut prompt = String::new();
+    for (i, c) in chars.iter().enumerate() {
+        let (r, g, b) = GRADIENT[i];
+        let _ = write!(prompt, "\x1b[38;2;{r};{g};{b}m{c}");
+    }
+    prompt.push_str("\x1b[0m "); // reset + space
+    prompt
+}
 
 /// Runs the interactive shell.
 ///
@@ -15,6 +38,7 @@ const PROMPT: &str = "hyprlog> ";
 /// Returns error message if shell cannot be initialized.
 pub fn run(config: &Config) -> Result<(), String> {
     let logger = build_logger(config);
+    let prompt = build_prompt();
 
     let mut rl: Editor<(), DefaultHistory> =
         DefaultEditor::new().map_err(|e| format!("Error creating editor: {e}"))?;
@@ -33,7 +57,7 @@ pub fn run(config: &Config) -> Result<(), String> {
     );
 
     loop {
-        match rl.readline(PROMPT) {
+        match rl.readline(&prompt) {
             Ok(line) => {
                 let line = line.trim();
                 if line.is_empty() {
