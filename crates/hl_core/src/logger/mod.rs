@@ -85,6 +85,32 @@ impl Logger {
             ),
         );
 
+        if config.highlight.enabled {
+            let patterns: Vec<&str> = [
+                config.highlight.patterns.urls.as_ref().map(|_| "urls"),
+                config.highlight.patterns.paths.as_ref().map(|_| "paths"),
+                config.highlight.patterns.quoted.as_ref().map(|_| "quoted"),
+                config
+                    .highlight
+                    .patterns
+                    .numbers
+                    .as_ref()
+                    .map(|_| "numbers"),
+            ]
+            .into_iter()
+            .flatten()
+            .collect();
+
+            internal::debug(
+                "HIGHLIGHT",
+                &format!(
+                    "Loaded {} keywords, patterns: [{}]",
+                    config.highlight.keywords.len(),
+                    patterns.join(", ")
+                ),
+            );
+        }
+
         let icon_set = Self::build_icon_set(config);
         let tag_config = Self::build_tag_config(config);
 
