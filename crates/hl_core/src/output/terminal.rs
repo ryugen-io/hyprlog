@@ -1,6 +1,7 @@
 //! Terminal output with color support.
 
-use crate::fmt::{Color, FormatTemplate, FormatValues, IconSet, TagConfig, style};
+use crate::config::HighlightConfig;
+use crate::fmt::{Color, FormatTemplate, FormatValues, IconSet, TagConfig, highlight, style};
 use crate::level::Level;
 
 use super::{LogRecord, Output, OutputError};
@@ -22,6 +23,8 @@ pub struct TerminalOutput {
     color_map: HashMap<String, Color>,
     /// Colors per level.
     level_colors: HashMap<Level, Color>,
+    /// Auto-highlighting config.
+    highlight_config: HighlightConfig,
 }
 
 impl Default for TerminalOutput {
@@ -46,6 +49,7 @@ impl TerminalOutput {
         color_map.insert("green".to_string(), Color::green());
         color_map.insert("yellow".to_string(), Color::yellow());
         color_map.insert("cyan".to_string(), Color::cyan());
+        color_map.insert("blue".to_string(), Color::blue());
         color_map.insert("purple".to_string(), Color::purple());
         color_map.insert("pink".to_string(), Color::pink());
         color_map.insert("orange".to_string(), Color::orange());
@@ -58,6 +62,7 @@ impl TerminalOutput {
             template: FormatTemplate::parse("{tag} {scope}  {msg}"),
             color_map,
             level_colors,
+            highlight_config: HighlightConfig::default(),
         }
     }
 
@@ -103,6 +108,13 @@ impl TerminalOutput {
         self
     }
 
+    /// Sets the highlight configuration.
+    #[must_use]
+    pub fn highlight_config(mut self, config: HighlightConfig) -> Self {
+        self.highlight_config = config;
+        self
+    }
+
     /// Formats and prints a log record.
     fn format_record(&self, record: &LogRecord) -> String {
         let level_color = self
@@ -134,8 +146,13 @@ impl TerminalOutput {
             record.scope.clone()
         };
 
-        // Format message with inline styles
-        let msg_segments = style::parse(&record.message);
+        // Format message with auto-highlighting and inline styles
+        let msg_with_highlights = if self.colors_enabled {
+            highlight::inject_tags(&record.message, &self.highlight_config)
+        } else {
+            record.message.clone()
+        };
+        let msg_segments = style::parse(&msg_with_highlights);
         let msg = if self.colors_enabled {
             style::render(&msg_segments, &self.color_map)
         } else {

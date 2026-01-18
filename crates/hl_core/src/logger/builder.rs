@@ -1,7 +1,7 @@
 //! Logger builder types.
 
 use super::Logger;
-use crate::config::PresetConfig;
+use crate::config::{HighlightConfig, PresetConfig};
 use crate::fmt::{Color, IconSet, TagConfig};
 use crate::level::Level;
 use crate::output::{FileOutput, Output, TerminalOutput};
@@ -122,6 +122,13 @@ impl TerminalBuilder {
     #[must_use]
     pub fn level_color(mut self, level: Level, color: Color) -> Self {
         self.output = self.output.level_color(level, color);
+        self
+    }
+
+    /// Sets the highlight configuration.
+    #[must_use]
+    pub fn highlight_config(mut self, config: HighlightConfig) -> Self {
+        self.output = self.output.highlight_config(config);
         self
     }
 

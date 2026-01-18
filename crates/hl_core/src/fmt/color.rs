@@ -88,6 +88,11 @@ impl Color {
     pub const fn orange() -> Self {
         Self::new(255, 184, 108)
     }
+
+    #[must_use]
+    pub const fn blue() -> Self {
+        Self::new(98, 114, 164)
+    }
 }
 
 impl fmt::Display for Color {

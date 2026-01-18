@@ -5,8 +5,8 @@ mod structs;
 
 pub use error::ConfigError;
 pub use structs::{
-    CleanupConfig, FileConfig, GeneralConfig, IconsConfig, PresetConfig, RetentionConfig,
-    ShellConfig, TagConfigFile, TerminalConfig,
+    CleanupConfig, FileConfig, GeneralConfig, HighlightConfig, IconsConfig, PatternsConfig,
+    PresetConfig, RetentionConfig, ShellConfig, TagConfigFile, TerminalConfig,
 };
 
 use crate::fmt::{Alignment, Color, IconType, Transform};
@@ -33,6 +33,8 @@ pub struct Config {
     pub cleanup: CleanupConfig,
     /// Tag formatting settings.
     pub tag: TagConfigFile,
+    /// Auto-highlighting settings.
+    pub highlight: HighlightConfig,
     /// Color definitions.
     pub colors: HashMap<String, String>,
     /// Icon definitions per level.
@@ -146,6 +148,9 @@ impl Config {
         }
         for (k, v) in other.tag.labels {
             self.tag.labels.entry(k).or_insert(v);
+        }
+        for (k, v) in other.highlight.keywords {
+            self.highlight.keywords.entry(k).or_insert(v);
         }
     }
 

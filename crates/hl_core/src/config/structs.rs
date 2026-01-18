@@ -197,3 +197,63 @@ pub struct PresetConfig {
     /// Application name override.
     pub app_name: Option<String>,
 }
+
+/// Auto-highlighting configuration.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
+pub struct HighlightConfig {
+    /// Enable auto-highlighting.
+    pub enabled: bool,
+    /// Keywords to highlight (keyword -> color name).
+    pub keywords: HashMap<String, String>,
+    /// Pattern-based highlighting.
+    pub patterns: PatternsConfig,
+}
+
+impl Default for HighlightConfig {
+    fn default() -> Self {
+        let mut keywords = HashMap::new();
+        keywords.insert("ERROR".to_string(), "red".to_string());
+        keywords.insert("WARN".to_string(), "yellow".to_string());
+        keywords.insert("OK".to_string(), "green".to_string());
+        keywords.insert("SUCCESS".to_string(), "green".to_string());
+        keywords.insert("FAIL".to_string(), "red".to_string());
+        keywords.insert("true".to_string(), "green".to_string());
+        keywords.insert("false".to_string(), "red".to_string());
+        keywords.insert("null".to_string(), "purple".to_string());
+        keywords.insert("none".to_string(), "purple".to_string());
+        keywords.insert("yes".to_string(), "green".to_string());
+        keywords.insert("no".to_string(), "red".to_string());
+
+        Self {
+            enabled: true,
+            keywords,
+            patterns: PatternsConfig::default(),
+        }
+    }
+}
+
+/// Pattern-based highlighting configuration.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
+pub struct PatternsConfig {
+    /// Color for file paths (/path/to/file, ./relative, ~/home).
+    pub paths: Option<String>,
+    /// Color for URLs (https://..., http://...).
+    pub urls: Option<String>,
+    /// Color for numbers (123, 3.14, -42).
+    pub numbers: Option<String>,
+    /// Color for quoted strings ("string" or 'string').
+    pub quoted: Option<String>,
+}
+
+impl Default for PatternsConfig {
+    fn default() -> Self {
+        Self {
+            paths: Some("cyan".to_string()),
+            urls: Some("blue".to_string()),
+            numbers: Some("orange".to_string()),
+            quoted: Some("yellow".to_string()),
+        }
+    }
+}

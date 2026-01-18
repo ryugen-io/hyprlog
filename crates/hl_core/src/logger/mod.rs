@@ -80,8 +80,8 @@ impl Logger {
         internal::debug(
             "LOGGER",
             &format!(
-                "Terminal: colors={}, structure={}",
-                config.terminal.colors, config.terminal.structure
+                "Terminal: colors={}, structure={}, highlight={}",
+                config.terminal.colors, config.terminal.structure, config.highlight.enabled
             ),
         );
 
@@ -93,7 +93,8 @@ impl Logger {
             .colors(config.terminal.colors)
             .icons(icon_set)
             .structure(&config.terminal.structure)
-            .tag_config(tag_config);
+            .tag_config(tag_config)
+            .highlight_config(config.highlight.clone());
 
         // Apply custom colors from config
         for name in config.colors.keys() {
