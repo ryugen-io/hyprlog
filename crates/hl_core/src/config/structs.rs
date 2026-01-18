@@ -212,29 +212,16 @@ pub struct HighlightConfig {
 
 impl Default for HighlightConfig {
     fn default() -> Self {
-        let mut keywords = HashMap::new();
-        keywords.insert("ERROR".to_string(), "red".to_string());
-        keywords.insert("WARN".to_string(), "yellow".to_string());
-        keywords.insert("OK".to_string(), "green".to_string());
-        keywords.insert("SUCCESS".to_string(), "green".to_string());
-        keywords.insert("FAIL".to_string(), "red".to_string());
-        keywords.insert("true".to_string(), "green".to_string());
-        keywords.insert("false".to_string(), "red".to_string());
-        keywords.insert("null".to_string(), "purple".to_string());
-        keywords.insert("none".to_string(), "purple".to_string());
-        keywords.insert("yes".to_string(), "green".to_string());
-        keywords.insert("no".to_string(), "red".to_string());
-
         Self {
             enabled: true,
-            keywords,
+            keywords: HashMap::new(),
             patterns: PatternsConfig::default(),
         }
     }
 }
 
 /// Pattern-based highlighting configuration.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 #[serde(default)]
 pub struct PatternsConfig {
     /// Color for file paths (/path/to/file, ./relative, ~/home).
@@ -245,15 +232,4 @@ pub struct PatternsConfig {
     pub numbers: Option<String>,
     /// Color for quoted strings ("string" or 'string').
     pub quoted: Option<String>,
-}
-
-impl Default for PatternsConfig {
-    fn default() -> Self {
-        Self {
-            paths: Some("cyan".to_string()),
-            urls: Some("blue".to_string()),
-            numbers: Some("orange".to_string()),
-            quoted: Some("yellow".to_string()),
-        }
-    }
 }
