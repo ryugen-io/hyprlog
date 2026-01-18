@@ -16,12 +16,17 @@ use themes::Theme;
 /// # Errors
 /// Returns error message if shell cannot be initialized.
 pub fn run(config: &Config) -> Result<(), String> {
+    internal::debug("SHELL", "Initializing shell...");
     let logger = build_logger(config);
 
-    // Parse theme from config
+    // Load themes
+    internal::debug(
+        "THEMES",
+        &format!("Available: {} themes", themes::ALL_THEMES.len()),
+    );
     let theme = Theme::from_str(&config.shell.theme).unwrap_or_else(|_| {
         internal::warn(
-            "SHELL",
+            "THEMES",
             &format!(
                 "Unknown theme '{}', using default 'dracula'",
                 config.shell.theme
@@ -29,20 +34,22 @@ pub fn run(config: &Config) -> Result<(), String> {
         );
         Theme::default()
     });
-    internal::debug("SHELL", &format!("Theme: {}", theme.name()));
+    internal::debug("THEMES", &format!("Selected: {}", theme.name()));
     let prompt = theme.build_prompt();
 
+    // Initialize readline
+    internal::debug("SHELL", "Initializing readline...");
     let mut rl: Editor<(), DefaultHistory> =
         DefaultEditor::new().map_err(|e| format!("Error creating editor: {e}"))?;
 
     let history_path = get_history_path();
     if let Some(path) = &history_path {
-        if rl.load_history(path).is_err() {
-            internal::warn("SHELL", "Could not load history");
+        if rl.load_history(path).is_ok() {
+            internal::debug("SHELL", "History loaded");
         }
     }
 
-    internal::info("SHELL", "Starting interactive shell");
+    internal::debug("SHELL", "Shell ready");
     logger.info(
         "SHELL",
         "hyprlog shell - type 'help' for commands, 'quit' to exit",

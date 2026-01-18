@@ -47,43 +47,57 @@ impl Logger {
     /// * `app_name` - Application name override.
     #[must_use]
     pub fn from_config_with(config: &crate::config::Config, app_name: &str) -> Self {
+        internal::debug("LOGGER", &format!("Initializing logger for app={app_name}"));
+        internal::debug("LOGGER", &format!("Log level: {}", config.general.level));
+
         let mut builder = LoggerBuilder::new().level(config.parse_level());
-        let mut output_count = 0;
+        let mut outputs: Vec<&str> = Vec::new();
 
         if config.terminal.enabled {
             builder = Self::configure_terminal(builder, config);
-            output_count += 1;
+            outputs.push("terminal");
         }
 
         if config.file.enabled {
             builder = Self::configure_file(builder, config, app_name);
-            output_count += 1;
+            outputs.push("file");
         }
 
-        internal::debug(
-            "LOGGER",
-            &format!("Logger built with {output_count} outputs"),
-        );
-
-        if !config.presets.is_empty() {
+        if outputs.is_empty() {
+            internal::warn("LOGGER", "No outputs enabled");
+        } else {
             internal::debug(
                 "LOGGER",
-                &format!("Loading {} presets", config.presets.len()),
+                &format!("Outputs enabled: [{}]", outputs.join(", ")),
             );
         }
 
+        if !config.presets.is_empty() {
+            internal::debug(
+                "PRESETS",
+                &format!("Loaded {} presets", config.presets.len()),
+            );
+        }
+
+        internal::debug("LOGGER", "Logger ready");
         builder.presets(config.presets.clone()).build()
     }
 
     /// Configures terminal output from config.
     fn configure_terminal(builder: LoggerBuilder, config: &crate::config::Config) -> LoggerBuilder {
+        internal::debug("TERMINAL", "Configuring terminal output...");
         internal::debug(
-            "LOGGER",
+            "TERMINAL",
             &format!(
-                "Terminal: colors={}, structure={}, highlight={}",
-                config.terminal.colors, config.terminal.structure, config.highlight.enabled
+                "Colors: {}",
+                if config.terminal.colors {
+                    "enabled"
+                } else {
+                    "disabled"
+                }
             ),
         );
+        internal::debug("TERMINAL", &format!("Icons: {}", config.terminal.icons));
 
         if config.highlight.enabled {
             let patterns: Vec<&str> = [
@@ -103,12 +117,11 @@ impl Logger {
 
             internal::debug(
                 "HIGHLIGHT",
-                &format!(
-                    "Loaded {} keywords, patterns: [{}]",
-                    config.highlight.keywords.len(),
-                    patterns.join(", ")
-                ),
+                &format!("Keywords: {} loaded", config.highlight.keywords.len()),
             );
+            internal::debug("HIGHLIGHT", &format!("Patterns: [{}]", patterns.join(", ")));
+        } else {
+            internal::debug("HIGHLIGHT", "Disabled");
         }
 
         let icon_set = Self::build_icon_set(config);
@@ -203,11 +216,12 @@ impl Logger {
         config: &crate::config::Config,
         app_name: &str,
     ) -> LoggerBuilder {
+        internal::debug("FILE", "Configuring file output...");
+        internal::debug("FILE", &format!("Base dir: {}", config.file.base_dir));
         internal::debug(
-            "LOGGER",
+            "FILE",
             &format!(
-                "File: base_dir={}, app={}",
-                config.file.base_dir,
+                "App name: {}",
                 config.general.app_name.as_deref().unwrap_or(app_name)
             ),
         );

@@ -30,20 +30,26 @@ pub fn init_with_config(config: &Config) {
     let was_init = INTERNAL_LOGGER.get().is_some();
     INTERNAL_LOGGER.get_or_init(|| build_internal_logger(config));
     if !was_init {
-        debug("INTERNAL", "Initializing internal logger");
+        debug("INTERNAL", "Initializing internal logger...");
+        debug("INTERNAL", &format!("Log level: {}", config.general.level));
         if config.terminal.enabled {
             debug(
                 "INTERNAL",
                 &format!(
-                    "Terminal output: colors={}, icons={}",
-                    config.terminal.colors, config.terminal.icons
+                    "Terminal: colors={}, icons={}",
+                    if config.terminal.colors {
+                        "enabled"
+                    } else {
+                        "disabled"
+                    },
+                    config.terminal.icons
                 ),
             );
         }
         if config.file.enabled {
             debug(
                 "INTERNAL",
-                &format!("File output: base_dir={}", config.file.base_dir),
+                &format!("File: base_dir={}", config.file.base_dir),
             );
         }
         debug("INTERNAL", "Internal logger ready");
