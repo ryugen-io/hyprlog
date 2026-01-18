@@ -59,6 +59,7 @@ fn build_internal_logger(config: &Config) -> Logger {
             .colors(config.terminal.colors)
             .icons(IconSet::from(config.parse_icon_type()))
             .structure(&config.terminal.structure)
+            .highlight_config(config.highlight.clone())
             .done();
     }
 
