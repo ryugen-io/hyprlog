@@ -1,9 +1,11 @@
 //! Output backends for log messages.
 
 mod file;
+mod json;
 mod terminal;
 
 pub use file::FileOutput;
+pub use json::JsonOutput;
 pub use terminal::TerminalOutput;
 
 use crate::fmt::{FormatValues, TagConfig};

@@ -1,0 +1,41 @@
+HYPRLOG STATUS - 2026-01-19
+============================
+
+FERTIG: Auto-Highlighting Feature
+---------------------------------
+- Keywords und Patterns werden automatisch eingefaerbt in {msg}
+- Config in ~/.config/hypr/hyprlog.conf unter [highlight]
+- Keine hardcoded defaults - alles kommt aus config
+- inject_tags() loggt NICHTS mehr (recursion fix)
+- Internal logger hat wieder highlighting enabled
+
+Config Beispiel:
+  [highlight]
+  enabled = true
+  [highlight.keywords]
+  ERROR = "red"
+  OK = "green"
+  [highlight.patterns]
+  paths = "cyan"
+  urls = "blue"
+
+FERTIG: Debug Logging Consistency
+---------------------------------
+- Alle Module haben jetzt einheitliche Debug-Messages
+- Scopes: LOGGER, TERMINAL, FILE, HIGHLIGHT, PRESETS, SHELL, THEMES, INTERNAL
+- Tone: "Initializing...", "X loaded", "Ready"
+
+COMMITS (nicht gepusht):
+------------------------
+1acf825 refactor(internal): improve debug logging consistency across modules
+1954538 fix(internal): re-enable highlighting for internal logger
+1a8d7ff refactor(highlight): remove hardcoded defaults
+84c19c2 feat(highlight): add debug logging for highlight config
+52deafd feat(core): add auto-highlighting for message content
+
+TESTS: Alle passed (64 tests)
+
+NAECHSTE SCHRITTE:
+------------------
+- git push wenn ready
+- Diese status.txt loeschen

@@ -233,3 +233,34 @@ pub struct PatternsConfig {
     /// Color for quoted strings ("string" or 'string').
     pub quoted: Option<String>,
 }
+
+/// JSON database output configuration.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
+pub struct JsonConfig {
+    /// Enable JSON database output.
+    pub enabled: bool,
+    /// Path to the JSONL database file.
+    pub path: String,
+}
+
+impl Default for JsonConfig {
+    fn default() -> Self {
+        let path = directories::ProjectDirs::from("", "", "hyprlog").map_or_else(
+            || "hyprlog.jsonl".to_string(),
+            |dirs| {
+                dirs.state_dir()
+                    .unwrap_or_else(|| dirs.data_dir())
+                    .join("db")
+                    .join("hyprlog.jsonl")
+                    .to_string_lossy()
+                    .into_owned()
+            },
+        );
+
+        Self {
+            enabled: false,
+            path,
+        }
+    }
+}

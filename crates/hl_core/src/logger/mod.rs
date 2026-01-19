@@ -1,8 +1,10 @@
 //! Main logger struct with builder pattern.
 
 mod builder;
+mod json_builder;
 
 pub use builder::{FileBuilder, LoggerBuilder, TerminalBuilder};
+pub use json_builder::JsonBuilder;
 
 use crate::config::PresetConfig;
 use crate::fmt::FormatValues;
@@ -61,6 +63,11 @@ impl Logger {
         if config.file.enabled {
             builder = Self::configure_file(builder, config, app_name);
             outputs.push("file");
+        }
+
+        if config.json.enabled {
+            builder = Self::configure_json(builder, config, app_name);
+            outputs.push("json");
         }
 
         if outputs.is_empty() {
@@ -233,6 +240,22 @@ impl Logger {
             .filename_structure(&config.file.filename_structure)
             .content_structure(&config.file.content_structure)
             .timestamp_format(&config.file.timestamp_format)
+            .app_name(config.general.app_name.as_deref().unwrap_or(app_name))
+            .done()
+    }
+
+    /// Configures JSON database output from config.
+    fn configure_json(
+        builder: LoggerBuilder,
+        config: &crate::config::Config,
+        app_name: &str,
+    ) -> LoggerBuilder {
+        internal::debug("JSON", "Configuring JSON database output...");
+        internal::debug("JSON", &format!("Path: {}", config.json.path));
+
+        builder
+            .json()
+            .path(&config.json.path)
             .app_name(config.general.app_name.as_deref().unwrap_or(app_name))
             .done()
     }

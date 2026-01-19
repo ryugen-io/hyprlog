@@ -1,18 +1,19 @@
 //! Logger builder types.
 
 use super::Logger;
+use super::json_builder::JsonBuilder;
 use crate::config::{HighlightConfig, PresetConfig};
 use crate::fmt::{Color, IconSet, TagConfig};
 use crate::level::Level;
-use crate::output::{FileOutput, Output, TerminalOutput};
+use crate::output::{FileOutput, JsonOutput, Output, TerminalOutput};
 use std::collections::HashMap;
 
 /// Builder for configuring a logger.
 #[derive(Default)]
 pub struct LoggerBuilder {
-    min_level: Level,
-    outputs: Vec<Box<dyn Output>>,
-    presets: HashMap<String, PresetConfig>,
+    pub(super) min_level: Level,
+    pub(super) outputs: Vec<Box<dyn Output>>,
+    pub(super) presets: HashMap<String, PresetConfig>,
 }
 
 impl LoggerBuilder {
@@ -55,6 +56,15 @@ impl LoggerBuilder {
         FileBuilder {
             parent: self,
             output: FileOutput::new(),
+        }
+    }
+
+    /// Adds a JSON database output with default configuration.
+    #[must_use]
+    pub fn json(self) -> JsonBuilder {
+        JsonBuilder {
+            parent: self,
+            output: JsonOutput::new(),
         }
     }
 
