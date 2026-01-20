@@ -74,32 +74,23 @@ pub fn cleanup(base_dir: &Path, options: &CleanupOptions) -> Result<CleanupResul
             continue;
         }
 
-        let mut should_process = options.delete_all;
+        // Check if file should be processed based on filters
+        let age_match = options
+            .max_age_days
+            .is_some_and(|max| file.age_days > u64::from(max));
+        let before_match = options
+            .before_date
+            .zip(file.modified_date)
+            .is_some_and(|(before, mod_date)| mod_date < before);
+        let after_match = options
+            .after_date
+            .zip(file.modified_date)
+            .is_some_and(|(after, mod_date)| mod_date > after);
 
-        // Check age filter
-        if let Some(max) = options.max_age_days {
-            if file.age_days > u64::from(max) {
-                internal::trace("CLEANUP", &format!("File {} exceeds age limit", file.path));
-                should_process = true;
-            }
-        }
+        let should_process = options.delete_all || age_match || before_match || after_match;
 
-        // Check before_date filter
-        if let Some(before) = options.before_date {
-            if let Some(mod_date) = file.modified_date {
-                if mod_date < before {
-                    should_process = true;
-                }
-            }
-        }
-
-        // Check after_date filter
-        if let Some(after) = options.after_date {
-            if let Some(mod_date) = file.modified_date {
-                if mod_date > after {
-                    should_process = true;
-                }
-            }
+        if age_match {
+            internal::trace("CLEANUP", &format!("File {} exceeds age limit", file.path));
         }
 
         if should_process {
@@ -153,33 +144,33 @@ pub fn cleanup(base_dir: &Path, options: &CleanupOptions) -> Result<CleanupResul
     }
 
     // Delete by size limit (only applies to deletion, not compression)
-    if !options.compress {
-        if let Some(limit) = options.max_total_size {
-            let remaining: Vec<_> = files
-                .iter()
-                .filter(|f| {
-                    !result.deleted.contains(&f.path)
-                        && !result.would_delete.contains(&f.path)
-                        && !protected_paths.contains(&f.path)
-                })
-                .collect();
+    if !options.compress
+        && let Some(limit) = options.max_total_size
+    {
+        let remaining: Vec<_> = files
+            .iter()
+            .filter(|f| {
+                !result.deleted.contains(&f.path)
+                    && !result.would_delete.contains(&f.path)
+                    && !protected_paths.contains(&f.path)
+            })
+            .collect();
 
-            let mut total: u64 = remaining.iter().map(|f| f.size).sum();
+        let mut total: u64 = remaining.iter().map(|f| f.size).sum();
 
-            // Delete oldest files until under limit
-            for file in remaining.iter().rev() {
-                if total <= limit {
-                    break;
-                }
-                if options.dry_run {
-                    result.would_delete.push(file.path.clone());
-                    result.would_free += file.size;
-                } else if fs::remove_file(&file.path).is_ok() {
-                    result.deleted.push(file.path.clone());
-                    result.freed += file.size;
-                }
-                total = total.saturating_sub(file.size);
+        // Delete oldest files until under limit
+        for file in remaining.iter().rev() {
+            if total <= limit {
+                break;
             }
+            if options.dry_run {
+                result.would_delete.push(file.path.clone());
+                result.would_free += file.size;
+            } else if fs::remove_file(&file.path).is_ok() {
+                result.deleted.push(file.path.clone());
+                result.freed += file.size;
+            }
+            total = total.saturating_sub(file.size);
         }
     }
 

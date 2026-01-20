@@ -60,33 +60,34 @@ fn collect_log_files_recursive(
             } else {
                 collect_log_files_recursive(&path, now, None, files, folders)?;
             }
-        } else if app_filter.is_none() && path.extension().is_some_and(|e| e == "log") {
-            if let Ok(meta) = fs::metadata(&path) {
-                let size = meta.len();
-                let modified = meta.modified().ok();
-                let age_days = modified
-                    .and_then(|m| now.duration_since(m).ok())
-                    .map_or(0, |d| d.as_secs() / 86400);
+        } else if app_filter.is_none()
+            && path.extension().is_some_and(|e| e == "log")
+            && let Ok(meta) = fs::metadata(&path)
+        {
+            let size = meta.len();
+            let modified = meta.modified().ok();
+            let age_days = modified
+                .and_then(|m| now.duration_since(m).ok())
+                .map_or(0, |d| d.as_secs() / 86400);
 
-                let modified_date = modified.and_then(|m| {
-                    let duration = m.duration_since(std::time::UNIX_EPOCH).ok()?;
-                    let timestamp = i64::try_from(duration.as_secs()).ok()?;
-                    chrono::DateTime::from_timestamp(timestamp, 0).map(|dt| dt.naive_utc().date())
-                });
+            let modified_date = modified.and_then(|m| {
+                let duration = m.duration_since(std::time::UNIX_EPOCH).ok()?;
+                let timestamp = i64::try_from(duration.as_secs()).ok()?;
+                chrono::DateTime::from_timestamp(timestamp, 0).map(|dt| dt.naive_utc().date())
+            });
 
-                // Track parent folder
-                if let Some(parent) = path.parent() {
-                    folders.insert(parent.display().to_string());
-                }
-
-                internal::trace("CLEANUP", &format!("Found: {}", path.display()));
-                files.push(LogFileInfo {
-                    path: path.display().to_string(),
-                    size,
-                    age_days,
-                    modified_date,
-                });
+            // Track parent folder
+            if let Some(parent) = path.parent() {
+                folders.insert(parent.display().to_string());
             }
+
+            internal::trace("CLEANUP", &format!("Found: {}", path.display()));
+            files.push(LogFileInfo {
+                path: path.display().to_string(),
+                size,
+                age_days,
+                modified_date,
+            });
         }
     }
 

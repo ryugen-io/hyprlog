@@ -145,3 +145,38 @@ fn json_creates_parent_dirs() {
 
     assert!(json_path.exists());
 }
+
+#[test]
+fn json_uses_app_name_override_from_record() {
+    let tmp_dir = TempDir::new().unwrap();
+    let json_path = tmp_dir.path().join("test.jsonl");
+
+    let logger = Logger::builder()
+        .json()
+        .path(&json_path)
+        .app_name("default")
+        .done()
+        .build();
+
+    logger.log_full(Level::Info, "TEST", "Hello", Some("override"));
+
+    let content = fs::read_to_string(&json_path).unwrap();
+    let parsed: serde_json::Value = serde_json::from_str(content.trim()).unwrap();
+
+    assert_eq!(parsed["app"], "override");
+}
+
+#[test]
+fn json_includes_label_override() {
+    let tmp_dir = TempDir::new().unwrap();
+    let json_path = tmp_dir.path().join("test.jsonl");
+
+    let logger = Logger::builder().json().path(&json_path).done().build();
+
+    logger.log_with_label(Level::Info, "TEST", "Hello", "SUCCESS");
+
+    let content = fs::read_to_string(&json_path).unwrap();
+    let parsed: serde_json::Value = serde_json::from_str(content.trim()).unwrap();
+
+    assert_eq!(parsed["label"], "SUCCESS");
+}

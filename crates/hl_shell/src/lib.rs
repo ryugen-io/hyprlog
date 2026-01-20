@@ -43,10 +43,10 @@ pub fn run(config: &Config) -> Result<(), String> {
         DefaultEditor::new().map_err(|e| format!("Error creating editor: {e}"))?;
 
     let history_path = get_history_path();
-    if let Some(path) = &history_path {
-        if rl.load_history(path).is_ok() {
-            internal::debug("SHELL", "History loaded");
-        }
+    if let Some(path) = &history_path
+        && rl.load_history(path).is_ok()
+    {
+        internal::debug("SHELL", "History loaded");
     }
 
     internal::debug("SHELL", "Shell ready");
@@ -79,10 +79,10 @@ pub fn run(config: &Config) -> Result<(), String> {
         }
     }
 
-    if let Some(path) = &history_path {
-        if rl.save_history(path).is_err() {
-            internal::warn("SHELL", "Could not save history");
-        }
+    if let Some(path) = &history_path
+        && rl.save_history(path).is_err()
+    {
+        internal::warn("SHELL", "Could not save history");
     }
 
     internal::info("SHELL", "Shell exited");
@@ -256,20 +256,19 @@ fn cmd_cleanup(parts: &[&str], config: &Config, logger: &Logger) {
 
     let mut options = CleanupOptions::new().dry_run(dry_run).delete_all(all);
 
-    if let Some(idx) = parts.iter().position(|&p| p == "--older-than") {
-        if let Some(days_str) = parts.get(idx + 1) {
-            if let Ok(days) = days_str.trim_end_matches('d').parse::<u32>() {
-                internal::debug("CLEANUP", &format!("max_age_days={days}"));
-                options = options.max_age_days(days);
-            }
-        }
+    if let Some(idx) = parts.iter().position(|&p| p == "--older-than")
+        && let Some(days_str) = parts.get(idx + 1)
+        && let Ok(days) = days_str.trim_end_matches('d').parse::<u32>()
+    {
+        internal::debug("CLEANUP", &format!("max_age_days={days}"));
+        options = options.max_age_days(days);
     }
 
-    if let Some(idx) = parts.iter().position(|&p| p == "--max-size") {
-        if let Some(size_str) = parts.get(idx + 1) {
-            internal::debug("CLEANUP", &format!("max_size={size_str}"));
-            options = options.max_total_size(size_str);
-        }
+    if let Some(idx) = parts.iter().position(|&p| p == "--max-size")
+        && let Some(size_str) = parts.get(idx + 1)
+    {
+        internal::debug("CLEANUP", &format!("max_size={size_str}"));
+        options = options.max_total_size(size_str);
     }
 
     let base_dir = expand_path(&config.file.base_dir);
@@ -323,14 +322,10 @@ fn build_logger(config: &Config) -> Logger {
 }
 
 fn expand_path(path: &str) -> PathBuf {
-    if path.starts_with('~') {
-        if let Some(user_dirs) = directories::UserDirs::new() {
-            return PathBuf::from(path.replacen(
-                '~',
-                user_dirs.home_dir().to_str().unwrap_or(""),
-                1,
-            ));
-        }
+    if path.starts_with('~')
+        && let Some(user_dirs) = directories::UserDirs::new()
+    {
+        return PathBuf::from(path.replacen('~', user_dirs.home_dir().to_str().unwrap_or(""), 1));
     }
     PathBuf::from(path)
 }

@@ -1,7 +1,10 @@
 //! Terminal output with color support.
 
 use crate::config::HighlightConfig;
-use crate::fmt::{Color, FormatTemplate, FormatValues, IconSet, TagConfig, highlight, style};
+use crate::fmt::{
+    Color, FormatTemplate, FormatValues, IconSet, ScopeConfig, TagConfig, Transform, highlight,
+    style,
+};
 use crate::level::Level;
 
 use super::{LogRecord, Output, OutputError};
@@ -17,6 +20,10 @@ pub struct TerminalOutput {
     icons: IconSet,
     /// Tag formatting config.
     tag_config: TagConfig,
+    /// Scope formatting config.
+    scope_config: ScopeConfig,
+    /// Message transform.
+    message_transform: Transform,
     /// Output structure template.
     template: FormatTemplate,
     /// Named colors for styling.
@@ -59,6 +66,8 @@ impl TerminalOutput {
             colors_enabled: true,
             icons: IconSet::nerdfont(),
             tag_config: TagConfig::default(),
+            scope_config: ScopeConfig::default(),
+            message_transform: Transform::None,
             template: FormatTemplate::parse("{tag} {scope}  {msg}"),
             color_map,
             level_colors,
@@ -84,6 +93,20 @@ impl TerminalOutput {
     #[must_use]
     pub fn tag_config(mut self, config: TagConfig) -> Self {
         self.tag_config = config;
+        self
+    }
+
+    /// Sets the scope configuration.
+    #[must_use]
+    pub const fn scope_config(mut self, config: ScopeConfig) -> Self {
+        self.scope_config = config;
+        self
+    }
+
+    /// Sets the message transform.
+    #[must_use]
+    pub const fn message_transform(mut self, transform: Transform) -> Self {
+        self.message_transform = transform;
         self
     }
 
@@ -139,18 +162,20 @@ impl TerminalOutput {
             icon.to_string()
         };
 
-        // Format scope (dimmed)
+        // Format scope (padded and dimmed)
+        let padded_scope = self.scope_config.format(&record.scope);
         let scope = if self.colors_enabled {
-            format!("\x1b[2m{}\x1b[0m", record.scope)
+            format!("\x1b[2m{padded_scope}\x1b[0m")
         } else {
-            record.scope.clone()
+            padded_scope
         };
 
-        // Format message with auto-highlighting and inline styles
+        // Apply message transform and auto-highlighting
+        let transformed_msg = self.message_transform.apply(&record.message);
         let msg_with_highlights = if self.colors_enabled {
-            highlight::inject_tags(&record.message, &self.highlight_config)
+            highlight::inject_tags(&transformed_msg, &self.highlight_config)
         } else {
-            record.message.clone()
+            transformed_msg
         };
         let msg_segments = style::parse(&msg_with_highlights);
         let msg = if self.colors_enabled {

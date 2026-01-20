@@ -352,7 +352,7 @@ checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
 name = "hl_cli"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
  "chrono",
  "directories",
@@ -365,7 +365,7 @@ dependencies = [
 
 [[package]]
 name = "hl_common"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
  "clap",
  "hl_core",
@@ -373,7 +373,7 @@ dependencies = [
 
 [[package]]
 name = "hl_core"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
  "chrono",
  "directories",
@@ -389,7 +389,7 @@ dependencies = [
 
 [[package]]
 name = "hl_ffi"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
  "cbindgen",
  "hl_core",
@@ -397,7 +397,7 @@ dependencies = [
 
 [[package]]
 name = "hl_shell"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
  "directories",
  "hl_common",

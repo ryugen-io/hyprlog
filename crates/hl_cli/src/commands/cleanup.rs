@@ -37,65 +37,63 @@ pub fn cmd_cleanup(args: &[&str], config: &Config) -> ExitCode {
     }
 
     // CLI overrides config
-    if let Some(idx) = args.iter().position(|&a| a == "--older-than") {
-        if let Some(days_str) = args.get(idx + 1) {
-            if let Ok(days) = days_str.trim_end_matches('d').parse::<u32>() {
-                internal::debug("CLEANUP", &format!("CLI override: max_age_days={days}"));
-                options = options.max_age_days(days);
-            }
+    if let Some(idx) = args.iter().position(|&a| a == "--older-than")
+        && let Some(days_str) = args.get(idx + 1)
+        && let Ok(days) = days_str.trim_end_matches('d').parse::<u32>()
+    {
+        internal::debug("CLEANUP", &format!("CLI override: max_age_days={days}"));
+        options = options.max_age_days(days);
+    }
+
+    if let Some(idx) = args.iter().position(|&a| a == "--max-size")
+        && let Some(size_str) = args.get(idx + 1)
+    {
+        internal::debug("CLEANUP", &format!("CLI override: max_size={size_str}"));
+        options = options.max_total_size(size_str);
+    }
+
+    if let Some(idx) = args.iter().position(|&a| a == "--app")
+        && let Some(app) = args.get(idx + 1)
+    {
+        internal::debug("CLEANUP", &format!("CLI override: app={app}"));
+        options = options.app_filter((*app).to_string());
+    }
+
+    if let Some(idx) = args.iter().position(|&a| a == "--keep-last")
+        && let Some(n_str) = args.get(idx + 1)
+        && let Ok(n) = n_str.parse::<usize>()
+    {
+        internal::debug("CLEANUP", &format!("CLI override: keep_last={n}"));
+        options = options.keep_last(n);
+    }
+
+    if let Some(idx) = args.iter().position(|&a| a == "--before")
+        && let Some(date_str) = args.get(idx + 1)
+    {
+        if let Ok(date) = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
+            internal::debug("CLEANUP", &format!("CLI override: before={date}"));
+            options = options.before_date(date);
+        } else {
+            internal::error(
+                "CLEANUP",
+                &format!("Invalid date format for --before: {date_str} (use YYYY-MM-DD)"),
+            );
+            return ExitCode::FAILURE;
         }
     }
 
-    if let Some(idx) = args.iter().position(|&a| a == "--max-size") {
-        if let Some(size_str) = args.get(idx + 1) {
-            internal::debug("CLEANUP", &format!("CLI override: max_size={size_str}"));
-            options = options.max_total_size(size_str);
-        }
-    }
-
-    if let Some(idx) = args.iter().position(|&a| a == "--app") {
-        if let Some(app) = args.get(idx + 1) {
-            internal::debug("CLEANUP", &format!("CLI override: app={app}"));
-            options = options.app_filter((*app).to_string());
-        }
-    }
-
-    if let Some(idx) = args.iter().position(|&a| a == "--keep-last") {
-        if let Some(n_str) = args.get(idx + 1) {
-            if let Ok(n) = n_str.parse::<usize>() {
-                internal::debug("CLEANUP", &format!("CLI override: keep_last={n}"));
-                options = options.keep_last(n);
-            }
-        }
-    }
-
-    if let Some(idx) = args.iter().position(|&a| a == "--before") {
-        if let Some(date_str) = args.get(idx + 1) {
-            if let Ok(date) = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
-                internal::debug("CLEANUP", &format!("CLI override: before={date}"));
-                options = options.before_date(date);
-            } else {
-                internal::error(
-                    "CLEANUP",
-                    &format!("Invalid date format for --before: {date_str} (use YYYY-MM-DD)"),
-                );
-                return ExitCode::FAILURE;
-            }
-        }
-    }
-
-    if let Some(idx) = args.iter().position(|&a| a == "--after") {
-        if let Some(date_str) = args.get(idx + 1) {
-            if let Ok(date) = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
-                internal::debug("CLEANUP", &format!("CLI override: after={date}"));
-                options = options.after_date(date);
-            } else {
-                internal::error(
-                    "CLEANUP",
-                    &format!("Invalid date format for --after: {date_str} (use YYYY-MM-DD)"),
-                );
-                return ExitCode::FAILURE;
-            }
+    if let Some(idx) = args.iter().position(|&a| a == "--after")
+        && let Some(date_str) = args.get(idx + 1)
+    {
+        if let Ok(date) = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
+            internal::debug("CLEANUP", &format!("CLI override: after={date}"));
+            options = options.after_date(date);
+        } else {
+            internal::error(
+                "CLEANUP",
+                &format!("Invalid date format for --after: {date_str} (use YYYY-MM-DD)"),
+            );
+            return ExitCode::FAILURE;
         }
     }
 

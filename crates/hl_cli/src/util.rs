@@ -19,14 +19,10 @@ pub fn parse_level(s: &str) -> Option<Level> {
 /// Expands a path with tilde to the user's home directory.
 #[must_use]
 pub fn expand_path(path: &str) -> PathBuf {
-    if path.starts_with('~') {
-        if let Some(user_dirs) = directories::UserDirs::new() {
-            return PathBuf::from(path.replacen(
-                '~',
-                user_dirs.home_dir().to_str().unwrap_or(""),
-                1,
-            ));
-        }
+    if path.starts_with('~')
+        && let Some(user_dirs) = directories::UserDirs::new()
+    {
+        return PathBuf::from(path.replacen('~', user_dirs.home_dir().to_str().unwrap_or(""), 1));
     }
     PathBuf::from(path)
 }

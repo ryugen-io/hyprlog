@@ -141,22 +141,19 @@ impl Output for JsonOutput {
         internal::trace("JSON", &format!("Writing to: {}", path.display()));
 
         // Create parent directories
-        if let Some(parent) = path.parent() {
-            if !parent.exists() {
-                match fs::create_dir_all(parent) {
-                    Ok(()) => {
-                        internal::debug(
-                            "JSON",
-                            &format!("Created directory: {}", parent.display()),
-                        );
-                    }
-                    Err(e) => {
-                        internal::error(
-                            "JSON",
-                            &format!("Failed to create directory {}: {}", parent.display(), e),
-                        );
-                        return Err(e.into());
-                    }
+        if let Some(parent) = path.parent()
+            && !parent.exists()
+        {
+            match fs::create_dir_all(parent) {
+                Ok(()) => {
+                    internal::debug("JSON", &format!("Created directory: {}", parent.display()));
+                }
+                Err(e) => {
+                    internal::error(
+                        "JSON",
+                        &format!("Failed to create directory {}: {}", parent.display(), e),
+                    );
+                    return Err(e.into());
                 }
             }
         }

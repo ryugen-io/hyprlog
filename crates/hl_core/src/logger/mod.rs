@@ -136,6 +136,8 @@ impl Logger {
 
         let icon_set = Self::build_icon_set(config);
         let tag_config = Self::build_tag_config(config);
+        let scope_config = Self::build_scope_config(config);
+        let message_transform = config.parse_message_transform();
 
         let mut terminal = builder
             .terminal()
@@ -143,6 +145,8 @@ impl Logger {
             .icons(icon_set)
             .structure(&config.terminal.structure)
             .tag_config(tag_config)
+            .scope_config(scope_config)
+            .message_transform(message_transform)
             .highlight_config(config.highlight.clone());
 
         // Apply custom colors from config
@@ -218,6 +222,14 @@ impl Logger {
         }
 
         tag_config
+    }
+
+    /// Builds scope config from config.
+    fn build_scope_config(config: &crate::config::Config) -> crate::fmt::ScopeConfig {
+        crate::fmt::ScopeConfig::new()
+            .min_width(config.scope.min_width)
+            .alignment(config.parse_scope_alignment())
+            .transform(config.parse_scope_transform())
     }
 
     /// Configures file output from config.

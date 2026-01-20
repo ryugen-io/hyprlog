@@ -6,7 +6,8 @@ mod structs;
 pub use error::ConfigError;
 pub use structs::{
     CleanupConfig, FileConfig, GeneralConfig, HighlightConfig, IconsConfig, JsonConfig,
-    PatternsConfig, PresetConfig, RetentionConfig, ShellConfig, TagConfigFile, TerminalConfig,
+    MessageConfigFile, PatternsConfig, PresetConfig, RetentionConfig, ScopeConfigFile, ShellConfig,
+    TagConfigFile, TerminalConfig,
 };
 
 use crate::fmt::{Alignment, Color, IconType, Transform};
@@ -35,6 +36,10 @@ pub struct Config {
     pub cleanup: CleanupConfig,
     /// Tag formatting settings.
     pub tag: TagConfigFile,
+    /// Scope formatting settings.
+    pub scope: ScopeConfigFile,
+    /// Message formatting settings.
+    pub message: MessageConfigFile,
     /// Auto-highlighting settings.
     pub highlight: HighlightConfig,
     /// Color definitions.
@@ -57,10 +62,9 @@ fn extract_sources(content: &str) -> (Vec<String>, String) {
                 .split('=')
                 .nth(1)
                 .map(|s| s.trim().trim_matches('"').trim_matches('\''))
+                && !path.is_empty()
             {
-                if !path.is_empty() {
-                    sources.push(path.to_string());
-                }
+                sources.push(path.to_string());
             }
         } else {
             remaining.push_str(line);
@@ -200,6 +204,38 @@ impl Config {
             "left" => Alignment::Left,
             "right" => Alignment::Right,
             _ => Alignment::Center,
+        }
+    }
+
+    /// Parses the scope transform.
+    #[must_use]
+    pub fn parse_scope_transform(&self) -> Transform {
+        match self.scope.transform.to_lowercase().as_str() {
+            "uppercase" | "upper" => Transform::Uppercase,
+            "lowercase" | "lower" => Transform::Lowercase,
+            "capitalize" | "cap" => Transform::Capitalize,
+            _ => Transform::None,
+        }
+    }
+
+    /// Parses the scope alignment.
+    #[must_use]
+    pub fn parse_scope_alignment(&self) -> Alignment {
+        match self.scope.alignment.to_lowercase().as_str() {
+            "right" => Alignment::Right,
+            "center" => Alignment::Center,
+            _ => Alignment::Left,
+        }
+    }
+
+    /// Parses the message transform.
+    #[must_use]
+    pub fn parse_message_transform(&self) -> Transform {
+        match self.message.transform.to_lowercase().as_str() {
+            "uppercase" | "upper" => Transform::Uppercase,
+            "lowercase" | "lower" => Transform::Lowercase,
+            "capitalize" | "cap" => Transform::Capitalize,
+            _ => Transform::None,
         }
     }
 

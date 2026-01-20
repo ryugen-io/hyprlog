@@ -3,7 +3,7 @@
 use super::Logger;
 use super::json_builder::JsonBuilder;
 use crate::config::{HighlightConfig, PresetConfig};
-use crate::fmt::{Color, IconSet, TagConfig};
+use crate::fmt::{Color, IconSet, ScopeConfig, TagConfig, Transform};
 use crate::level::Level;
 use crate::output::{FileOutput, JsonOutput, Output, TerminalOutput};
 use std::collections::HashMap;
@@ -119,6 +119,20 @@ impl TerminalBuilder {
     #[must_use]
     pub fn tag_config(mut self, config: TagConfig) -> Self {
         self.output = self.output.tag_config(config);
+        self
+    }
+
+    /// Sets the scope configuration.
+    #[must_use]
+    pub fn scope_config(mut self, config: ScopeConfig) -> Self {
+        self.output = self.output.scope_config(config);
+        self
+    }
+
+    /// Sets the message transform.
+    #[must_use]
+    pub fn message_transform(mut self, transform: Transform) -> Self {
+        self.output = self.output.message_transform(transform);
         self
     }
 

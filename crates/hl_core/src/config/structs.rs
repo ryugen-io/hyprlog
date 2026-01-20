@@ -141,6 +141,44 @@ pub struct CleanupConfig {
     pub compress_after_days: Option<u32>,
 }
 
+/// Message formatting configuration.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
+pub struct MessageConfigFile {
+    /// Text transform (none, uppercase, lowercase, capitalize).
+    pub transform: String,
+}
+
+impl Default for MessageConfigFile {
+    fn default() -> Self {
+        Self {
+            transform: "none".to_string(),
+        }
+    }
+}
+
+/// Scope formatting configuration.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
+pub struct ScopeConfigFile {
+    /// Minimum width (padded if shorter).
+    pub min_width: usize,
+    /// Alignment (left, right, center).
+    pub alignment: String,
+    /// Text transform (none, uppercase, lowercase, capitalize).
+    pub transform: String,
+}
+
+impl Default for ScopeConfigFile {
+    fn default() -> Self {
+        Self {
+            min_width: 12,
+            alignment: "left".to_string(),
+            transform: "none".to_string(),
+        }
+    }
+}
+
 /// Tag formatting configuration.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default)]

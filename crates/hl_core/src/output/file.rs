@@ -180,22 +180,19 @@ impl Output for FileOutput {
         internal::trace("FILE", &format!("Writing to: {}", path.display()));
 
         // Create directories
-        if let Some(parent) = path.parent() {
-            if !parent.exists() {
-                match fs::create_dir_all(parent) {
-                    Ok(()) => {
-                        internal::debug(
-                            "FILE",
-                            &format!("Created directory: {}", parent.display()),
-                        );
-                    }
-                    Err(e) => {
-                        internal::error(
-                            "FILE",
-                            &format!("Failed to create directory {}: {}", parent.display(), e),
-                        );
-                        return Err(e.into());
-                    }
+        if let Some(parent) = path.parent()
+            && !parent.exists()
+        {
+            match fs::create_dir_all(parent) {
+                Ok(()) => {
+                    internal::debug("FILE", &format!("Created directory: {}", parent.display()));
+                }
+                Err(e) => {
+                    internal::error(
+                        "FILE",
+                        &format!("Failed to create directory {}: {}", parent.display(), e),
+                    );
+                    return Err(e.into());
                 }
             }
         }
