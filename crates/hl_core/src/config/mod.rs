@@ -5,9 +5,9 @@ mod structs;
 
 pub use error::ConfigError;
 pub use structs::{
-    CleanupConfig, FileConfig, GeneralConfig, HighlightConfig, IconsConfig, JsonConfig,
-    MessageConfigFile, PatternsConfig, PresetConfig, RetentionConfig, ScopeConfigFile, ShellConfig,
-    TagConfigFile, TerminalConfig,
+    AppConfig, AppFileConfig, AppTerminalConfig, CleanupConfig, FileConfig, GeneralConfig,
+    HighlightConfig, IconsConfig, JsonConfig, MessageConfigFile, PatternsConfig, PresetConfig,
+    RetentionConfig, ScopeConfigFile, ShellConfig, TagConfigFile, TerminalConfig,
 };
 
 use crate::fmt::{Alignment, Color, IconType, Transform};
@@ -48,6 +48,9 @@ pub struct Config {
     pub icons: IconsConfig,
     /// Log presets/dictionary.
     pub presets: HashMap<String, PresetConfig>,
+    /// Per-app configuration overrides.
+    /// Key is the app name (e.g., "sysrat"), value contains overrides.
+    pub apps: HashMap<String, AppConfig>,
 }
 
 /// Extracts `source = "path"` lines from config content.
@@ -158,6 +161,53 @@ impl Config {
         for (k, v) in other.highlight.keywords {
             self.highlight.keywords.entry(k).or_insert(v);
         }
+        for (k, v) in other.apps {
+            self.apps.entry(k).or_insert(v);
+        }
+    }
+
+    /// Returns a config with app-specific overrides applied.
+    ///
+    /// If an `[apps.X]` section exists for the given app name, its settings
+    /// override the global config values.
+    #[must_use]
+    pub fn for_app(&self, app_name: &str) -> Self {
+        let mut config = self.clone();
+
+        if let Some(app_config) = self.apps.get(app_name) {
+            // Apply level override
+            if let Some(ref level) = app_config.level {
+                config.general.level.clone_from(level);
+            }
+
+            // Apply terminal overrides
+            if let Some(ref terminal) = app_config.terminal {
+                if let Some(enabled) = terminal.enabled {
+                    config.terminal.enabled = enabled;
+                }
+                if let Some(colors) = terminal.colors {
+                    config.terminal.colors = colors;
+                }
+                if let Some(ref icons) = terminal.icons {
+                    config.terminal.icons.clone_from(icons);
+                }
+                if let Some(ref structure) = terminal.structure {
+                    config.terminal.structure.clone_from(structure);
+                }
+            }
+
+            // Apply file overrides
+            if let Some(ref file) = app_config.file {
+                if let Some(enabled) = file.enabled {
+                    config.file.enabled = enabled;
+                }
+                if let Some(ref base_dir) = file.base_dir {
+                    config.file.base_dir.clone_from(base_dir);
+                }
+            }
+        }
+
+        config
     }
 
     /// Returns the default config file path.

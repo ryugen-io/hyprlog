@@ -272,6 +272,45 @@ pub struct PatternsConfig {
     pub quoted: Option<String>,
 }
 
+/// Per-app configuration overrides.
+///
+/// Used in `[apps.X]` sections to override global settings for specific apps.
+/// All fields are optional - only specified fields override the global config.
+#[derive(Debug, Clone, Deserialize, Default)]
+#[serde(default)]
+pub struct AppConfig {
+    /// Override log level for this app.
+    pub level: Option<String>,
+    /// Override terminal settings.
+    pub terminal: Option<AppTerminalConfig>,
+    /// Override file settings.
+    pub file: Option<AppFileConfig>,
+}
+
+/// Per-app terminal overrides.
+#[derive(Debug, Clone, Deserialize, Default)]
+#[serde(default)]
+pub struct AppTerminalConfig {
+    /// Override enabled state.
+    pub enabled: Option<bool>,
+    /// Override colors.
+    pub colors: Option<bool>,
+    /// Override icons.
+    pub icons: Option<String>,
+    /// Override structure template.
+    pub structure: Option<String>,
+}
+
+/// Per-app file output overrides.
+#[derive(Debug, Clone, Deserialize, Default)]
+#[serde(default)]
+pub struct AppFileConfig {
+    /// Override enabled state.
+    pub enabled: Option<bool>,
+    /// Override base directory.
+    pub base_dir: Option<String>,
+}
+
 /// JSON database output configuration.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default)]

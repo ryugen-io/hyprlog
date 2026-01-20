@@ -48,26 +48,31 @@ impl Logger {
     /// # Arguments
     /// * `config` - The hyprlog config to use.
     /// * `app_name` - Application name override.
+    ///
+    /// This method applies app-specific overrides from `[apps.{app_name}]` sections.
     #[must_use]
     pub fn from_config_with(config: &crate::config::Config, app_name: &str) -> Self {
         internal::debug("LOGGER", &format!("Initializing logger for app={app_name}"));
+
+        // Apply app-specific config overrides
+        let config = config.for_app(app_name);
         internal::debug("LOGGER", &format!("Log level: {}", config.general.level));
 
         let mut builder = LoggerBuilder::new().level(config.parse_level());
         let mut outputs: Vec<&str> = Vec::new();
 
         if config.terminal.enabled {
-            builder = Self::configure_terminal(builder, config);
+            builder = Self::configure_terminal(builder, &config);
             outputs.push("terminal");
         }
 
         if config.file.enabled {
-            builder = Self::configure_file(builder, config, app_name);
+            builder = Self::configure_file(builder, &config, app_name);
             outputs.push("file");
         }
 
         if config.json.enabled {
-            builder = Self::configure_json(builder, config, app_name);
+            builder = Self::configure_json(builder, &config, app_name);
             outputs.push("json");
         }
 
@@ -88,7 +93,7 @@ impl Logger {
         }
 
         internal::debug("LOGGER", "Logger ready");
-        let mut logger = builder.presets(config.presets.clone()).build();
+        let mut logger = builder.presets(config.presets).build();
         logger.app_name = Some(app_name.to_string());
         logger
     }
