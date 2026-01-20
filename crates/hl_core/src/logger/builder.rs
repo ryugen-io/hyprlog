@@ -82,6 +82,7 @@ impl LoggerBuilder {
             min_level: self.min_level,
             outputs: self.outputs,
             presets: self.presets,
+            app_name: None,
         }
     }
 }

@@ -19,6 +19,7 @@ pub struct Logger {
     min_level: Level,
     outputs: Vec<Box<dyn Output>>,
     presets: HashMap<String, PresetConfig>,
+    app_name: Option<String>,
 }
 
 impl Logger {
@@ -87,7 +88,9 @@ impl Logger {
         }
 
         internal::debug("LOGGER", "Logger ready");
-        builder.presets(config.presets.clone()).build()
+        let mut logger = builder.presets(config.presets.clone()).build();
+        logger.app_name = Some(app_name.to_string());
+        logger
     }
 
     /// Configures terminal output from config.
@@ -272,7 +275,7 @@ impl Logger {
             message: msg.to_string(),
             values: FormatValues::new(),
             label_override: None,
-            app_name: None,
+            app_name: self.app_name.clone(),
             raw: false,
         };
 
@@ -293,7 +296,7 @@ impl Logger {
             message: msg.to_string(),
             values: FormatValues::new(),
             label_override: Some(label.to_string()),
-            app_name: None,
+            app_name: self.app_name.clone(),
             raw: false,
         };
 
@@ -314,7 +317,9 @@ impl Logger {
             message: msg.to_string(),
             values: FormatValues::new(),
             label_override: None,
-            app_name: app_name.map(ToString::to_string),
+            app_name: app_name
+                .map(ToString::to_string)
+                .or_else(|| self.app_name.clone()),
             raw: false,
         };
 
