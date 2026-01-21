@@ -7,16 +7,18 @@ fn file_output_writes_stripped_message() {
     let tmp_dir = TempDir::new().unwrap();
     let base_dir = tmp_dir.path().to_string_lossy().into_owned();
 
-    let logger = Logger::builder()
-        .file()
-        .base_dir(base_dir)
-        .path_structure("logs")
-        .filename_structure("test.log")
-        .content_structure("{scope}|{level}|{msg}")
-        .done()
-        .build();
+    {
+        let logger = Logger::builder()
+            .file()
+            .base_dir(base_dir)
+            .path_structure("logs")
+            .filename_structure("test.log")
+            .content_structure("{scope}|{level}|{msg}")
+            .done()
+            .build();
 
-    logger.info("SC", "Hello <bold>World</bold>");
+        logger.info("SC", "Hello <bold>World</bold>");
+    } // logger dropped here, flushes buffer
 
     let path = tmp_dir.path().join("logs").join("test.log");
     let content = fs::read_to_string(path).unwrap();
@@ -29,17 +31,19 @@ fn file_output_uses_app_name_in_path() {
     let tmp_dir = TempDir::new().unwrap();
     let base_dir = tmp_dir.path().to_string_lossy().into_owned();
 
-    let logger = Logger::builder()
-        .file()
-        .base_dir(base_dir)
-        .path_structure("{app}")
-        .filename_structure("out.log")
-        .content_structure("{scope}:{msg}")
-        .app_name("myapp")
-        .done()
-        .build();
+    {
+        let logger = Logger::builder()
+            .file()
+            .base_dir(base_dir)
+            .path_structure("{app}")
+            .filename_structure("out.log")
+            .content_structure("{scope}:{msg}")
+            .app_name("myapp")
+            .done()
+            .build();
 
-    logger.info("S", "Test");
+        logger.info("S", "Test");
+    } // logger dropped here, flushes buffer
 
     let path = tmp_dir.path().join("myapp").join("out.log");
     assert!(path.exists());
@@ -50,17 +54,19 @@ fn file_output_appends_multiple_lines() {
     let tmp_dir = TempDir::new().unwrap();
     let base_dir = tmp_dir.path().to_string_lossy().into_owned();
 
-    let logger = Logger::builder()
-        .file()
-        .base_dir(base_dir)
-        .path_structure("logs")
-        .filename_structure("multi.log")
-        .content_structure("{msg}")
-        .done()
-        .build();
+    {
+        let logger = Logger::builder()
+            .file()
+            .base_dir(base_dir)
+            .path_structure("logs")
+            .filename_structure("multi.log")
+            .content_structure("{msg}")
+            .done()
+            .build();
 
-    logger.info("S", "one");
-    logger.info("S", "two");
+        logger.info("S", "one");
+        logger.info("S", "two");
+    } // logger dropped here, flushes buffer
 
     let path = tmp_dir.path().join("logs").join("multi.log");
     let content = fs::read_to_string(path).unwrap();
@@ -74,16 +80,18 @@ fn file_output_uses_log_full_app_override() {
     let tmp_dir = TempDir::new().unwrap();
     let base_dir = tmp_dir.path().to_string_lossy().into_owned();
 
-    let logger = Logger::builder()
-        .file()
-        .base_dir(base_dir)
-        .path_structure("{app}")
-        .filename_structure("override.log")
-        .content_structure("{msg}")
-        .done()
-        .build();
+    {
+        let logger = Logger::builder()
+            .file()
+            .base_dir(base_dir)
+            .path_structure("{app}")
+            .filename_structure("override.log")
+            .content_structure("{msg}")
+            .done()
+            .build();
 
-    logger.log_full(hyprlog::Level::Info, "S", "Override", Some("appx"));
+        logger.log_full(hyprlog::Level::Info, "S", "Override", Some("appx"));
+    } // logger dropped here, flushes buffer
 
     let path = tmp_dir.path().join("appx").join("override.log");
     assert!(path.exists());

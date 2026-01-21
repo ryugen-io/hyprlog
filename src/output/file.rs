@@ -8,9 +8,9 @@ use chrono::Local;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::PathBuf;
+use std::sync::Mutex;
 
 /// File output configuration.
-#[derive(Debug, Clone)]
 pub struct FileOutput {
     /// Base directory for log files.
     base_dir: String,
@@ -26,6 +26,18 @@ pub struct FileOutput {
     app_name: String,
     /// Tag formatting config.
     tag_config: TagConfig,
+    /// Buffered line (header + raw items collected).
+    buffer: Mutex<Option<BufferedLine>>,
+}
+
+/// A buffered log line with collected raw items.
+struct BufferedLine {
+    /// The formatted header line.
+    content: String,
+    /// Path to write to.
+    path: PathBuf,
+    /// Collected raw items.
+    items: Vec<String>,
 }
 
 impl Default for FileOutput {
@@ -57,6 +69,7 @@ impl FileOutput {
             timestamp_format: "%Y-%m-%d %H:%M:%S".to_string(),
             app_name: "hyprlog".to_string(),
             tag_config: TagConfig::default(),
+            buffer: Mutex::new(None),
         }
     }
 
@@ -174,40 +187,87 @@ impl FileOutput {
     }
 }
 
+impl FileOutput {
+    /// Writes a buffered line to file.
+    fn write_buffered(buf: &BufferedLine) -> Result<(), OutputError> {
+        // Create directories
+        if let Some(parent) = buf.path.parent()
+            && !parent.exists()
+        {
+            fs::create_dir_all(parent)?;
+        }
+
+        let mut file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&buf.path)?;
+
+        // Build single line: header + items joined
+        let mut line = buf.content.clone();
+        if !buf.items.is_empty() {
+            line.push_str(&buf.items.join(", "));
+        }
+        line.push('\n');
+        file.write_all(line.as_bytes())?;
+        Ok(())
+    }
+}
+
 impl Output for FileOutput {
     fn write(&self, record: &LogRecord) -> Result<(), OutputError> {
-        let path = self.build_path(record)?;
-        internal::trace("FILE", &format!("Writing to: {}", path.display()));
+        let mut buffer = self.buffer.lock().unwrap();
 
-        // Create directories
+        if record.raw {
+            // Raw message: collect into buffer items
+            let clean = style::strip_tags(&record.message).trim().to_string();
+            if let Some(ref mut buf) = *buffer {
+                buf.items.push(clean);
+            }
+            // If no buffer exists, raw message is orphaned - ignore it
+            return Ok(());
+        }
+
+        // Normal message: flush existing buffer first
+        if let Some(ref buf) = *buffer {
+            Self::write_buffered(buf)?;
+        }
+
+        // Build new buffered line
+        let path = self.build_path(record)?;
+
+        // Create directories if needed
         if let Some(parent) = path.parent()
             && !parent.exists()
         {
-            match fs::create_dir_all(parent) {
-                Ok(()) => {
-                    internal::debug("FILE", &format!("Created directory: {}", parent.display()));
-                }
-                Err(e) => {
-                    internal::error(
-                        "FILE",
-                        &format!("Failed to create directory {}: {}", parent.display(), e),
-                    );
-                    return Err(e.into());
-                }
-            }
+            fs::create_dir_all(parent)?;
+            internal::debug("FILE", &format!("Created directory: {}", parent.display()));
         }
 
-        // Append to file (single atomic write with newline)
-        let mut file = OpenOptions::new().create(true).append(true).open(&path)?;
+        let content = self.format_content(record);
 
-        let mut content = self.format_content(record);
-        content.push('\n');
-        file.write_all(content.as_bytes())?;
+        *buffer = Some(BufferedLine {
+            content,
+            path,
+            items: Vec::new(),
+        });
+        drop(buffer);
 
         Ok(())
     }
 
     fn flush(&self) -> Result<(), OutputError> {
+        let mut buffer = self.buffer.lock().unwrap();
+        if let Some(ref buf) = *buffer {
+            Self::write_buffered(buf)?;
+        }
+        *buffer = None;
+        drop(buffer);
         Ok(())
+    }
+}
+
+impl Drop for FileOutput {
+    fn drop(&mut self) {
+        let _ = self.flush();
     }
 }
