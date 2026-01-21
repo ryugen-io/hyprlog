@@ -17,3 +17,7 @@ examples/cpp/build/
 .DS_Store
 Thumbs.db
 hyprlog.code-workspace
+
+# Dev
+dev/generic_dev_kit/
+.serena/
