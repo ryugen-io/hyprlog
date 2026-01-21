@@ -1,18 +1,51 @@
-[workspace]
-resolver = "3"
-members = ["crates/*"]
-
-[workspace.package]
+[package]
+name = "hyprlog"
+description = "Flexible logging library for Hyprland and beyond"
 version = "0.5.0"
 edition = "2024"
-rust-version = "1.94"
+rust-version = "1.85"
 license = "MIT"
 repository = "https://github.com/ryugen-io/hyprlog"
 
-[workspace.lints.rust]
-unsafe_code = "forbid"
+[features]
+default = ["cli"]
+cli = ["dep:clap", "dep:rustyline"]
+ffi = []
 
-[workspace.lints.clippy]
+[lib]
+crate-type = ["lib"]
+
+[[bin]]
+name = "hyprlog"
+path = "src/bin/hyprlog.rs"
+required-features = ["cli"]
+
+[lints.rust]
+# unsafe_code is handled conditionally in lib.rs via cfg_attr
+
+[lints.clippy]
 all = "warn"
 pedantic = "warn"
 nursery = "warn"
+
+[dependencies]
+# Core (always)
+chrono = "0.4"
+directories = "6"
+flate2 = "1"
+regex = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+shellexpand = "3"
+toml = "0.8"
+ulid = "1"
+
+# CLI (optional)
+clap = { version = "4", features = ["derive"], optional = true }
+rustyline = { version = "15", optional = true }
+
+[build-dependencies]
+cbindgen = { version = "0.28", optional = true }
+
+[dev-dependencies]
+tempfile = "3"
