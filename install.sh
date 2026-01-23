@@ -11,7 +11,7 @@
 #   Specific version:       curl -fsSL ... | bash -s -- v0.1.0
 #
 # Installs:
-#   CLI:    ~/.local/bin/hyprlog
+#   CLI:    ~/.local/bin/hypr/hyprlog
 #   C-ABI:  ~/.local/lib/libhl_ffi.so (optional, source builds only)
 #           ~/.local/include/hyprlog/hyprlog.h
 # =============================================================================
@@ -28,7 +28,7 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd ||
 readonly CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/hypr"
 readonly CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/hyprlog"
 readonly STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/hyprlog"
-readonly INSTALL_DIR="${HOME}/.local/bin"
+readonly INSTALL_DIR="${HOME}/.local/bin/hypr"
 readonly LIB_DIR="${HOME}/.local/lib"
 readonly INCLUDE_DIR="${HOME}/.local/include"
 
@@ -374,7 +374,7 @@ main() {
     # PATH check
     if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
         warn "$INSTALL_DIR not in PATH"
-        echo "  Add to config.fish: set -Ua fish_user_paths \$HOME/.local/bin"
+        echo "  Add to config.fish: set -Ua fish_user_paths \$HOME/.local/bin/hypr"
     fi
 
     # Show installed version
