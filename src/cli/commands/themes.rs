@@ -9,7 +9,7 @@ use std::process::ExitCode;
 pub fn cmd_themes(args: &[&str], logger: &Logger) -> ExitCode {
     match args.first().copied() {
         Some("list") | None => {
-            logger.info("THEMES", "Available themes:");
+            logger.print("THEMES", "Available themes:");
             for theme in ALL_THEMES {
                 let marker = if *theme == Theme::default() {
                     " (default)"
@@ -20,7 +20,7 @@ pub fn cmd_themes(args: &[&str], logger: &Logger) -> ExitCode {
             }
         }
         Some("preview") => {
-            logger.info("THEMES", "Theme previews:");
+            logger.print("THEMES", "Theme previews:");
             for theme in ALL_THEMES {
                 let prompt = theme.build_prompt();
                 logger.raw(&format!("  {}: {prompt}", theme.name()));
@@ -28,7 +28,7 @@ pub fn cmd_themes(args: &[&str], logger: &Logger) -> ExitCode {
         }
         Some(name) => {
             logger.error("THEMES", &format!("Unknown subcommand: {name}"));
-            logger.info("THEMES", "Usage: hyprlog themes [list|preview]");
+            logger.print("THEMES", "Usage: hyprlog themes [list|preview]");
             return ExitCode::FAILURE;
         }
     }

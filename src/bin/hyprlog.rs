@@ -63,8 +63,8 @@ fn main() -> ExitCode {
         "json" => cmd_json(args_str.get(1).copied(), &logger),
         "preset" => cmd_preset(&args_str[1..], &config, &logger),
         "presets" => cmd_presets(&config, &logger),
-        "stats" => cmd_stats(&args_str[1..], &config),
-        "cleanup" => cmd_cleanup(&args_str[1..], &config),
+        "stats" => cmd_stats(&args_str[1..], &config, &logger),
+        "cleanup" => cmd_cleanup(&args_str[1..], &config, &logger),
         "themes" => cmd_themes(&args_str[1..], &logger),
         // Shorthand: hyprlog <level> <scope> <msg>
         "trace" | "debug" | "info" | "warn" | "error" => cmd_log_shorthand(&args_str, &logger),

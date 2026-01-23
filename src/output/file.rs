@@ -5,10 +5,17 @@ use crate::internal;
 
 use super::{LogRecord, Output, OutputError};
 use chrono::Local;
+use std::cell::Cell;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::PathBuf;
 use std::sync::Mutex;
+
+// Thread-local recursion guard to prevent deadlock when internal logging
+// triggers file output which tries to log again.
+thread_local! {
+    static IN_FILE_WRITE: Cell<bool> = const { Cell::new(false) };
+}
 
 /// File output configuration.
 pub struct FileOutput {
@@ -141,7 +148,10 @@ impl FileOutput {
         } else {
             PathBuf::from(&self.base_dir)
         };
-        internal::trace("FILE", &format!("Resolved base dir: {}", path.display()));
+        // Only log if not already inside a file write (prevents deadlock)
+        if !IN_FILE_WRITE.with(Cell::get) {
+            internal::trace("FILE", &format!("Resolved base dir: {}", path.display()));
+        }
         Ok(path)
     }
 
@@ -205,16 +215,16 @@ impl FileOutput {
         // Build single line: header + items joined
         let mut line = buf.content.clone();
         if !buf.items.is_empty() {
+            line.push(' ');
             line.push_str(&buf.items.join(", "));
         }
         line.push('\n');
         file.write_all(line.as_bytes())?;
         Ok(())
     }
-}
 
-impl Output for FileOutput {
-    fn write(&self, record: &LogRecord) -> Result<(), OutputError> {
+    /// Inner write implementation (called with recursion guard set).
+    fn write_inner(&self, record: &LogRecord) -> Result<(), OutputError> {
         let mut buffer = self.buffer.lock().unwrap();
 
         if record.raw {
@@ -253,6 +263,16 @@ impl Output for FileOutput {
         drop(buffer);
 
         Ok(())
+    }
+}
+
+impl Output for FileOutput {
+    fn write(&self, record: &LogRecord) -> Result<(), OutputError> {
+        // Set recursion guard to prevent deadlock from internal logging
+        IN_FILE_WRITE.with(|flag| flag.set(true));
+        let result = self.write_inner(record);
+        IN_FILE_WRITE.with(|flag| flag.set(false));
+        result
     }
 
     fn flush(&self) -> Result<(), OutputError> {

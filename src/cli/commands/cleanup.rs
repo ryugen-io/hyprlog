@@ -1,15 +1,15 @@
 //! Cleanup command implementation.
 
 use crate::cleanup::{CleanupOptions, cleanup};
-use crate::cli::util::{build_logger, expand_path};
+use crate::cli::util::expand_path;
 use crate::config::Config;
 use crate::internal;
+use crate::logger::Logger;
 use std::process::ExitCode;
 
 /// Handles `hyprlog cleanup [options]`.
 #[must_use]
-pub fn cmd_cleanup(args: &[&str], config: &Config) -> ExitCode {
-    let logger = build_logger(config, None);
+pub fn cmd_cleanup(args: &[&str], config: &Config, logger: &Logger) -> ExitCode {
     let dry_run = args.contains(&"--dry-run");
     let all = args.contains(&"--all");
     let compress = args.contains(&"--compress");
@@ -109,7 +109,7 @@ pub fn cmd_cleanup(args: &[&str], config: &Config) -> ExitCode {
                 internal::warn("CLEANUP", &format!("Failed to process {path}: {err}"));
             }
 
-            result.log(&logger, dry_run);
+            result.log(logger, dry_run);
             ExitCode::SUCCESS
         }
         Err(e) => {

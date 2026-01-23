@@ -1,15 +1,15 @@
 //! Stats command implementation.
 
 use crate::cleanup::stats;
-use crate::cli::util::{build_logger, expand_path};
+use crate::cli::util::expand_path;
 use crate::config::Config;
 use crate::internal;
+use crate::logger::Logger;
 use std::process::ExitCode;
 
 /// Handles `hyprlog stats [--app <name>]`.
 #[must_use]
-pub fn cmd_stats(args: &[&str], config: &Config) -> ExitCode {
-    let logger = build_logger(config, None);
+pub fn cmd_stats(args: &[&str], config: &Config, logger: &Logger) -> ExitCode {
     let base_dir = expand_path(&config.file.base_dir);
 
     // Parse --app filter
@@ -20,7 +20,7 @@ pub fn cmd_stats(args: &[&str], config: &Config) -> ExitCode {
 
     match stats(&base_dir, app_filter) {
         Ok(s) => {
-            s.log(&logger);
+            s.log(logger);
             ExitCode::SUCCESS
         }
         Err(e) => {

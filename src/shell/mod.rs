@@ -54,7 +54,7 @@ pub fn run(config: &Config) -> Result<(), String> {
     }
 
     internal::debug("SHELL", "Shell ready");
-    logger.info(
+    logger.print(
         "SHELL",
         "hyprlog shell - type 'help' for commands, 'quit' to exit",
     );
@@ -196,9 +196,9 @@ fn cmd_presets(config: &Config, logger: &Logger) {
     let runner = PresetRunner::new(config, logger);
     let list = runner.list();
     if list.is_empty() {
-        logger.info("PRESETS", "No presets defined");
+        logger.print("PRESETS", "No presets defined");
     } else {
-        logger.info("PRESETS", "Available presets:");
+        logger.print("PRESETS", "Available presets:");
         let mut groups: std::collections::BTreeMap<String, Vec<&str>> =
             std::collections::BTreeMap::new();
 
@@ -228,7 +228,7 @@ fn cmd_stats(config: &Config, logger: &Logger) {
 fn cmd_themes(parts: &[&str], logger: &Logger) {
     match parts.get(1).copied() {
         Some("list") | None => {
-            logger.info("THEMES", "Available themes:");
+            logger.print("THEMES", "Available themes:");
             for theme in themes::ALL_THEMES {
                 let marker = if *theme == Theme::default() {
                     " (default)"
@@ -239,7 +239,7 @@ fn cmd_themes(parts: &[&str], logger: &Logger) {
             }
         }
         Some("preview") => {
-            logger.info("THEMES", "Theme previews:");
+            logger.print("THEMES", "Theme previews:");
             for theme in themes::ALL_THEMES {
                 let prompt = theme.build_prompt();
                 logger.raw(&format!("  {}: {prompt}", theme.name()));

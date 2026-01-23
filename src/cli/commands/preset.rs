@@ -29,9 +29,9 @@ pub fn cmd_presets(config: &Config, logger: &Logger) -> ExitCode {
     let runner = PresetRunner::new(config, logger);
     let list = runner.list();
     if list.is_empty() {
-        logger.info("PRESETS", "No presets defined");
+        logger.print("PRESETS", "No presets defined");
     } else {
-        logger.info("PRESETS", "Available presets:");
+        logger.print("PRESETS", "Available presets:");
         let mut groups: std::collections::BTreeMap<String, Vec<&str>> =
             std::collections::BTreeMap::new();
 

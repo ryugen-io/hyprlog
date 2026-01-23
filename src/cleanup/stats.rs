@@ -20,23 +20,26 @@ pub struct LogStats {
 }
 
 impl LogStats {
-    /// Logs the statistics using the provided logger.
+    /// Prints the statistics using the provided logger.
+    ///
+    /// Uses `print()` to bypass level filtering - command output should
+    /// always be visible regardless of configured log level.
     pub fn log(&self, logger: &Logger) {
-        logger.info("STATS", &format!("Total files: {}", self.total_files));
-        logger.info(
+        logger.print("STATS", &format!("Total files: {}", self.total_files));
+        logger.print(
             "STATS",
             &format!("Total size:  {}", format_size(self.total_size)),
         );
 
         if let Some(oldest) = &self.oldest_file {
-            logger.info("STATS", &format!("Oldest:      {oldest}"));
+            logger.print("STATS", &format!("Oldest:      {oldest}"));
         }
         if let Some(newest) = &self.newest_file {
-            logger.info("STATS", &format!("Newest:      {newest}"));
+            logger.print("STATS", &format!("Newest:      {newest}"));
         }
 
         if !self.files.is_empty() {
-            logger.info("STATS", "Files:");
+            logger.print("STATS", "Files:");
             for file in &self.files {
                 let age = if file.age_days == 0 {
                     "today".to_string()

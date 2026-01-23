@@ -120,6 +120,27 @@ impl Logger {
         self.log(Level::Error, scope, msg);
     }
 
+    /// Prints a message that bypasses level filtering.
+    ///
+    /// Use this for command output (stats, themes, etc.) that should always be
+    /// visible regardless of the configured log level. Formats like INFO but
+    /// ignores `min_level`.
+    pub fn print(&self, scope: &str, msg: &str) {
+        let record = LogRecord {
+            level: Level::Info,
+            scope: scope.to_string(),
+            message: msg.to_string(),
+            values: FormatValues::new(),
+            label_override: None,
+            app_name: self.app_name.clone(),
+            raw: false,
+        };
+
+        for output in &self.outputs {
+            let _ = output.write(&record);
+        }
+    }
+
     /// Outputs raw text without log formatting (no tag, icon, scope).
     ///
     /// Useful for list items, continuation lines, etc. where log prefixes would be noisy.

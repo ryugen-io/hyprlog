@@ -89,7 +89,7 @@ impl CleanupResult {
         if !self.would_delete.is_empty() {
             let count = self.would_delete.len();
             let size = format_size(self.would_free);
-            logger.info(
+            logger.print(
                 "CLEANUP",
                 &format!("Would delete {count} file(s), freeing {size}"),
             );
@@ -101,7 +101,7 @@ impl CleanupResult {
         if !self.would_compress.is_empty() {
             let count = self.would_compress.len();
             let size = format_size(self.would_compress_save);
-            logger.info(
+            logger.print(
                 "CLEANUP",
                 &format!("Would compress {count} file(s), saving ~{size}"),
             );
@@ -117,7 +117,7 @@ impl CleanupResult {
         if !self.deleted.is_empty() {
             let count = self.deleted.len();
             let size = format_size(self.freed);
-            logger.info("CLEANUP", &format!("Deleted {count} file(s), freed {size}"));
+            logger.print("CLEANUP", &format!("Deleted {count} file(s), freed {size}"));
             for path in &self.deleted {
                 logger.raw(&format!("  {path}"));
             }
@@ -126,7 +126,7 @@ impl CleanupResult {
         if !self.compressed.is_empty() {
             let count = self.compressed.len();
             let size = format_size(self.compressed_saved);
-            logger.info(
+            logger.print(
                 "CLEANUP",
                 &format!("Compressed {count} file(s), saved {size}"),
             );
