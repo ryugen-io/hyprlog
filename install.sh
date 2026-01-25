@@ -13,7 +13,7 @@
 # Installs:
 #   CLI:    ~/.local/bin/hypr/hyprlog
 #   C-ABI:  ~/.local/lib/libhyprlog.so (optional, source builds only)
-#           ~/.local/include/hyprlog/hyprlog.h
+#           hyprlog.h (interactive path selection)
 # =============================================================================
 
 set -euo pipefail
@@ -308,17 +308,52 @@ install_cabi() {
         return
     fi
 
-    # Create directories
+    # Install library to standard location
     create_dir "$LIB_DIR"
-    create_dir "${INCLUDE_DIR}/hyprlog"
-
-    # Install library
     cp "$lib_src" "${LIB_DIR}/" || die "Failed to install library"
     success "Installed library: ${LIB_DIR}/libhyprlog.so"
 
-    # Install header
-    cp "$header_src" "${INCLUDE_DIR}/hyprlog/" || die "Failed to install header"
-    success "Installed header: ${INCLUDE_DIR}/hyprlog/hyprlog.h"
+    # Ask user where to install header
+    echo ""
+    log "Where should the header file (hyprlog.h) be installed?"
+    echo "  [1] Current directory: $(pwd)"
+    echo "  [2] System include: ${INCLUDE_DIR}/hyprlog"
+    echo "  [3] Custom path"
+    echo "  [4] Skip header installation"
+    echo ""
+    read -rp "Choice [1-4, default=1]: " header_choice
+
+    local header_dest=""
+    case "${header_choice:-1}" in
+        1)
+            header_dest="$(pwd)"
+            ;;
+        2)
+            header_dest="${INCLUDE_DIR}/hyprlog"
+            create_dir "$header_dest"
+            ;;
+        3)
+            read -rp "Enter path: " custom_path
+            if [[ -z "$custom_path" ]]; then
+                warn "No path provided, skipping header installation"
+                return
+            fi
+            header_dest="${custom_path/#\~/$HOME}"
+            create_dir "$header_dest"
+            ;;
+        4)
+            log "Skipping header installation"
+            echo "  Header available at: $header_src"
+            return
+            ;;
+        *)
+            warn "Invalid choice, skipping header installation"
+            return
+            ;;
+    esac
+
+    cp "$header_src" "${header_dest}/" || die "Failed to install header"
+    success "Installed header: ${header_dest}/hyprlog.h"
 
     # ldconfig hint
     if [[ ":$LD_LIBRARY_PATH:" != *":$LIB_DIR:"* ]]; then
