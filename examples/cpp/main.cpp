@@ -2,17 +2,17 @@
  * hyprlog C++ FFI Example
  *
  * This demonstrates how the C header (hyprlog.h) connects to
- * the Rust implementation (libhl_ffi.so).
+ * the Rust implementation (libhyprlog.so).
  *
  * Build flow:
  *   1. Rust: cargo build --release
- *      -> compiles lib.rs to libhl_ffi.so (actual code)
+ *      -> compiles lib.rs to libhyprlog.so (actual code)
  *
  *   2. C++: cmake && make
  *      -> includes hyprlog.h (declarations only)
- *      -> links against libhl_ffi.so (implementation)
+ *      -> links against libhyprlog.so (implementation)
  *
- *   3. Runtime: LD_LIBRARY_PATH points to libhl_ffi.so
+ *   3. Runtime: LD_LIBRARY_PATH points to libhyprlog.so
  *      -> dynamic linker loads the Rust library
  *      -> function calls jump into Rust code
  */
@@ -34,7 +34,7 @@ void demonstrate_basic_logging() {
 
     // This call:
     // 1. C++ compiler sees declaration in hyprlog.h
-    // 2. Linker finds symbol 'hyprlog_init' in libhl_ffi.so
+    // 2. Linker finds symbol 'hyprlog_init' in libhyprlog.so
     // 3. At runtime: jumps into Rust code, executes Logger::builder()...
     // 4. Returns pointer to heap-allocated HyprlogContext (Box::into_raw)
     HyprlogContext* ctx = hyprlog_init();
@@ -144,7 +144,7 @@ void demonstrate_null_safety() {
 void explain_memory_model() {
     std::cout << "\n=== Memory Model Explanation ===" << std::endl;
     std::cout << R"(
-    C++ Side                           Rust Side (libhl_ffi.so)
+    C++ Side                           Rust Side (libhyprlog.so)
     =========                          ========================
 
     HyprlogContext* ctx;               pub struct HyprlogContext {

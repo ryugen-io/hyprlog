@@ -9,10 +9,10 @@ echo "=== hyprlog C++ FFI Example Build Script ==="
 echo ""
 
 # Step 1: Build Rust library
-echo "[1/3] Building Rust library (cargo build --release)..."
+echo "[1/3] Building Rust library (cargo build --release --features ffi)..."
 cd "$PROJECT_ROOT"
-cargo build --release
-echo "      -> libhl_ffi.so created"
+cargo build --release --features ffi
+echo "      -> libhyprlog.so created"
 echo ""
 
 # Step 2: Build C++ example

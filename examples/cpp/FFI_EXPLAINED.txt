@@ -28,7 +28,7 @@
     cargo build --release                  cmake && make
           |                                      |
           v                                      v
-    libhl_ffi.so                           main.cpp + hyprlog.h
+    libhyprlog.so                           main.cpp + hyprlog.h
     (machine code)                         (compiled to main.o)
           |                                      |
           |                                      |
@@ -37,7 +37,7 @@
                            v  v
                       LINKER combines:
                       - main.o (your code)
-                      - libhl_ffi.so (Rust code)
+                      - libhyprlog.so (Rust code)
                               |
                               v
                       hyprlog_example
@@ -47,7 +47,7 @@
 3. WHAT'S IN EACH FILE
 ======================
 
-    hyprlog.h (Header)                 libhl_ffi.so (Library)
+    hyprlog.h (Header)                 libhyprlog.so (Library)
     ==================                 ======================
 
     "These functions exist:"           Actual machine code:
@@ -67,20 +67,20 @@
     Your C++ code                    What actually happens
     =============                    =====================
 
-    ctx = hyprlog_init();     --->   1. CPU jumps to hyprlog_init in libhl_ffi.so
+    ctx = hyprlog_init();     --->   1. CPU jumps to hyprlog_init in libhyprlog.so
                                      2. Rust code executes:
                                         - Logger::builder().build()
                                         - Box::new(HyprlogContext { ... })
                                         - Box::into_raw(ctx)
                                      3. Returns pointer to C++
 
-    hyprlog_info(ctx, ...)    --->   1. CPU jumps to hyprlog_info in libhl_ffi.so
+    hyprlog_info(ctx, ...)    --->   1. CPU jumps to hyprlog_info in libhyprlog.so
                                      2. Rust code:
                                         - Converts C strings to &str
                                         - Calls context.logger.log(...)
                                         - Prints to terminal
 
-    hyprlog_free(ctx);        --->   1. CPU jumps to hyprlog_free in libhl_ffi.so
+    hyprlog_free(ctx);        --->   1. CPU jumps to hyprlog_free in libhyprlog.so
                                      2. Rust code:
                                         - Box::from_raw(ctx)  // take ownership
                                         - drop()              // free memory

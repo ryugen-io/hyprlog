@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # The connection between C++ and Rust works like this:
 #
 #   +------------------+     +------------------+     +------------------+
-#   |   main.cpp       |     |   hyprlog.h      |     |   libhl_ffi.so   |
+#   |   main.cpp       |     |   hyprlog.h      |     |   libhyprlog.so  |
 #   |   (your code)    |---->|   (interface)    |---->|   (Rust code)    |
 #   +------------------+     +------------------+     +------------------+
 #         |                        |                        |
@@ -20,7 +20,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #         |                        |                        |
 #         +------------------------+                        |
 #                    |                                      |
-#                    |  -lhl_ffi (link time)                |
+#                    |  -lhyprlog (link time)               |
 #                    +--------------------------------------+
 #                                   |
 #                                   |  LD_LIBRARY_PATH (runtime)
@@ -32,24 +32,24 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # ------------------------------------------------------------------------------
 # Step 1: Find the Rust-generated library
 # ------------------------------------------------------------------------------
-# After running `cargo build --release`, the library is at:
-#   target/release/libhl_ffi.so (Linux)
-#   target/release/libhl_ffi.dylib (macOS)
-#   target/release/hl_ffi.dll (Windows)
+# After running `cargo build --release --features ffi`, the library is at:
+#   target/release/libhyprlog.so (Linux)
+#   target/release/libhyprlog.dylib (macOS)
+#   target/release/hyprlog.dll (Windows)
 
 set(HYPRLOG_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 set(HYPRLOG_INCLUDE_DIR "${HYPRLOG_ROOT}/include")
 set(HYPRLOG_LIB_DIR "${HYPRLOG_ROOT}/target/release")
 
 # Check if library exists
-if(NOT EXISTS "${HYPRLOG_LIB_DIR}/libhl_ffi.so")
+if(NOT EXISTS "${HYPRLOG_LIB_DIR}/libhyprlog.so")
     message(WARNING "
     =======================================================
-    libhl_ffi.so not found!
+    libhyprlog.so not found!
 
     Build it first:
       cd ${HYPRLOG_ROOT}
-      cargo build --release
+      cargo build --release --features ffi
     =======================================================
     ")
 endif()
@@ -59,10 +59,10 @@ endif()
 # ------------------------------------------------------------------------------
 # This tells CMake about the pre-built Rust library
 
-add_library(hl_ffi SHARED IMPORTED)
-set_target_properties(hl_ffi PROPERTIES
+add_library(hyprlog SHARED IMPORTED)
+set_target_properties(hyprlog PROPERTIES
     # Where the actual compiled code lives
-    IMPORTED_LOCATION "${HYPRLOG_LIB_DIR}/libhl_ffi.so"
+    IMPORTED_LOCATION "${HYPRLOG_LIB_DIR}/libhyprlog.so"
 
     # Where the header file is (for #include)
     INTERFACE_INCLUDE_DIRECTORIES "${HYPRLOG_INCLUDE_DIR}"
@@ -77,13 +77,13 @@ add_executable(hyprlog_example main.cpp)
 # Link against the Rust library
 # This does two things:
 #   1. Adds include path for hyprlog.h (compile time)
-#   2. Links libhl_ffi.so (link time)
-target_link_libraries(hyprlog_example PRIVATE hl_ffi)
+#   2. Links libhyprlog.so (link time)
+target_link_libraries(hyprlog_example PRIVATE hyprlog)
 
 # ------------------------------------------------------------------------------
 # Step 4: Set up runtime library path
 # ------------------------------------------------------------------------------
-# The executable needs to find libhl_ffi.so at runtime.
+# The executable needs to find libhyprlog.so at runtime.
 # This adds the library directory to the executable's RPATH.
 
 set_target_properties(hyprlog_example PROPERTIES
@@ -100,7 +100,7 @@ message(STATUS "=== Build Instructions ===")
 message(STATUS "")
 message(STATUS "1. Build the Rust library first:")
 message(STATUS "   cd ${HYPRLOG_ROOT}")
-message(STATUS "   cargo build --release")
+message(STATUS "   cargo build --release --features ffi")
 message(STATUS "")
 message(STATUS "2. Build this C++ example:")
 message(STATUS "   mkdir -p build && cd build")

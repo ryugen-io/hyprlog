@@ -13,7 +13,8 @@ cli = ["dep:clap", "dep:rustyline"]
 ffi = []
 
 [lib]
-crate-type = ["lib"]
+name = "hyprlog"
+crate-type = ["lib", "cdylib"]
 
 [[bin]]
 name = "hyprlog"

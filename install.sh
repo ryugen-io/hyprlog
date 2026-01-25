@@ -12,7 +12,7 @@
 #
 # Installs:
 #   CLI:    ~/.local/bin/hypr/hyprlog
-#   C-ABI:  ~/.local/lib/libhl_ffi.so (optional, source builds only)
+#   C-ABI:  ~/.local/lib/libhyprlog.so (optional, source builds only)
 #           ~/.local/include/hyprlog/hyprlog.h
 # =============================================================================
 
@@ -289,13 +289,13 @@ install_cabi() {
     fi
 
     # Check if library exists
-    local lib_src="${SCRIPT_DIR}/target/release/libhl_ffi.so"
+    local lib_src="${SCRIPT_DIR}/target/release/libhyprlog.so"
     local header_src="${SCRIPT_DIR}/include/hyprlog.h"
 
     if [[ ! -f "$lib_src" ]]; then
         log "Building C-ABI library..."
         cd "$SCRIPT_DIR" || die "Failed to cd to script directory"
-        cargo build --release --package hl_ffi 2>&1 || die "C-ABI build failed"
+        cargo build --release --features ffi 2>&1 || die "C-ABI build failed"
     fi
 
     if [[ ! -f "$lib_src" ]]; then
@@ -314,7 +314,7 @@ install_cabi() {
 
     # Install library
     cp "$lib_src" "${LIB_DIR}/" || die "Failed to install library"
-    success "Installed library: ${LIB_DIR}/libhl_ffi.so"
+    success "Installed library: ${LIB_DIR}/libhyprlog.so"
 
     # Install header
     cp "$header_src" "${INCLUDE_DIR}/hyprlog/" || die "Failed to install header"
