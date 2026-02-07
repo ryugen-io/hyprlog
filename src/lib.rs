@@ -1,5 +1,5 @@
-// Forbid unsafe code except when ffi feature is enabled
-#![cfg_attr(not(feature = "ffi"), forbid(unsafe_code))]
+// Forbid unsafe code except when ffi or hyprland features are enabled
+#![cfg_attr(not(any(feature = "ffi", feature = "hyprland")), forbid(unsafe_code))]
 
 //! `hyprlog` - Flexible logging library for Hyprland and beyond.
 //!
@@ -51,6 +51,10 @@ pub mod cli;
 #[cfg(feature = "cli")]
 pub mod shell;
 
+// Hyprland IPC module (feature-gated)
+#[cfg(feature = "hyprland")]
+pub mod hyprland;
+
 // FFI module (feature-gated)
 #[cfg(feature = "ffi")]
 pub mod ffi;
@@ -69,6 +73,10 @@ pub use output::{FileOutput, Output, OutputError, TerminalOutput};
 // CLI re-exports
 #[cfg(feature = "cli")]
 pub use cli::PresetRunner;
+
+// Hyprland re-exports
+#[cfg(feature = "hyprland")]
+pub use hyprland::{EventListenerHandle, HyprlandError, HyprlandEvent};
 
 // FFI re-exports
 #[cfg(feature = "ffi")]

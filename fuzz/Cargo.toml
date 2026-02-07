@@ -1,0 +1,53 @@
+[package]
+name = "hyprlog-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.hyprlog]
+path = ".."
+default-features = false
+features = ["hyprland"]
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "fuzz_event_parse"
+path = "fuzz_targets/fuzz_event_parse.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_style_parse"
+path = "fuzz_targets/fuzz_style_parse.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_highlight"
+path = "fuzz_targets/fuzz_highlight.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_format_template"
+path = "fuzz_targets/fuzz_format_template.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_color_hex"
+path = "fuzz_targets/fuzz_color_hex.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_config_sources"
+path = "fuzz_targets/fuzz_config_sources.rs"
+doc = false

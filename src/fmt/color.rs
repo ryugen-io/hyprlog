@@ -23,7 +23,7 @@ impl Color {
     #[must_use]
     pub fn from_hex(hex: &str) -> Self {
         let hex = hex.trim_start_matches('#');
-        if hex.len() != 6 {
+        if hex.len() != 6 || !hex.is_ascii() {
             return Self::white();
         }
 

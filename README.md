@@ -10,7 +10,22 @@
 
 ## Overview
 
-hyprlog is a structured logging system designed for the Hypr ecosystem. It provides consistent, themeable log output across CLI tools, shell scripts, and applications.
+hyprlog is a logging library and CLI tool for the Hypr ecosystem, written in Rust. Single crate with feature-gated modules for CLI, C-ABI FFI, and Hyprland IPC.
+
+- Terminal, file, and JSON output backends
+- Inline styling (`<bold>`, `<red>`) and auto-highlighting (URLs, paths, numbers)
+- TOML config with `source = "..."` includes
+- Interactive shell
+- Hyprland IPC event listener and command dispatch
+
+### Hyprland Integration
+
+`hyprlog watch` connects to the Hyprland compositor via IPC and logs events (workspace switches, window opens, etc.) in real time. Add it to your Hyprland config to run on startup:
+
+```ini
+# ~/.config/hypr/hyprland.conf
+exec-once = hyprlog watch
+```
 
 ## Installation
 
@@ -87,21 +102,30 @@ hyprlog --preset startup
 
 ## Architecture
 
+Single crate with feature-gated modules:
+
 ```
-hyprlog (CLI binary)     hl_shell (interactive shell)
-        └─────────────────────────┘
-                    │
-                 hl_core (core logging)
-                    │
-                hl_common (shared utilities)
+hyprlog
+├── logger/       Core logging engine (builder pattern, output dispatch)
+├── output/       Output backends (terminal, file, JSON)
+├── config/       TOML config with source includes and per-app overrides
+├── fmt/          Formatting (color, style tags, templates, highlighting)
+├── level/        Log levels (Trace → Error)
+├── cleanup/      Log rotation (age/size/compression)
+├── cli/          CLI subcommands [feature: cli]
+├── shell/        Interactive REPL [feature: cli]
+├── hyprland/     Hyprland IPC integration [feature: hyprland]
+└── ffi.rs        C-ABI bindings [feature: ffi]
 ```
 
-### Crates
+## Development
 
-- **hl_core**: Core logging library with presets and formatters
-- **hl_cli**: Command-line interface
-- **hl_shell**: Interactive shell for log exploration
-- **hl_common**: Shared CLI utilities
+```bash
+just test               # Run test suite
+just lint               # Clippy
+just bench              # Criterion benchmarks
+just fuzz               # Fuzz all targets (30s each)
+```
 
 ## License
 

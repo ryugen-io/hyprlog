@@ -47,6 +47,12 @@ test:
 coverage:
     @./dev/scripts/test/coverage.sh
 
+bench *args:
+    @./dev/scripts/test/bench.sh {{args}}
+
+fuzz *args:
+    @./dev/scripts/test/fuzz.sh {{args}}
+
 # === Git ===
 
 changes *args:

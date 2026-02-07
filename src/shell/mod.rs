@@ -21,7 +21,27 @@ use themes::Theme;
 /// Returns error message if shell cannot be initialized.
 pub fn run(config: &Config) -> Result<(), String> {
     internal::debug("SHELL", "Initializing shell...");
-    let logger = build_logger(config);
+    let logger = std::sync::Arc::new(build_logger(config));
+
+    // Start Hyprland event listener if enabled
+    #[cfg(feature = "hyprland")]
+    let _hyprland_handle = if config.hyprland.enabled {
+        match crate::hyprland::listener::start_listener(
+            std::sync::Arc::clone(&logger),
+            &config.hyprland,
+        ) {
+            Ok(handle) => {
+                internal::info("HYPRLAND", "Background event listener started");
+                Some(handle)
+            }
+            Err(e) => {
+                internal::warn("HYPRLAND", &format!("Could not start event listener: {e}"));
+                None
+            }
+        }
+    } else {
+        None
+    };
 
     // Load themes
     internal::debug(
@@ -133,6 +153,16 @@ fn handle_command(line: &str, config: &Config, logger: &Logger) -> bool {
         }
         "themes" => {
             cmd_themes(&parts, logger);
+            true
+        }
+        #[cfg(feature = "hyprland")]
+        "watch" => {
+            shell_cmd_watch(&parts[1..], config, logger);
+            true
+        }
+        #[cfg(feature = "hyprland")]
+        "hypr" => {
+            shell_cmd_hypr(&parts[1..], config, logger);
             true
         }
         _ => {
@@ -300,7 +330,30 @@ fn parse_level(s: &str) -> Option<Level> {
     }
 }
 
+#[cfg(feature = "hyprland")]
+fn shell_cmd_watch(parts: &[&str], config: &Config, logger: &Logger) {
+    use crate::cli::cmd_watch;
+    let _ = cmd_watch(parts, config, logger);
+}
+
+#[cfg(feature = "hyprland")]
+fn shell_cmd_hypr(parts: &[&str], config: &Config, logger: &Logger) {
+    use crate::cli::cmd_hypr;
+    let _ = cmd_hypr(parts, config, logger);
+}
+
 fn print_help() {
+    let hyprland_help = if cfg!(feature = "hyprland") {
+        "\n  watch [options]                       Listen for Hyprland events\
+         \n    --events <e1,e2,...>               Only show specific events\
+         \n    --min-level <level>                Minimum event level\
+         \n  hypr <command> [-j]                   Send command to Hyprland\
+         \n    dispatch <dispatcher> [args]       Run a dispatcher\
+         \n    rollinglog [--follow]              Query or follow rolling log\n"
+    } else {
+        ""
+    };
+
     println!(
         "Commands:
   log <app> <level> <scope> <message>   Log a message for specific app
@@ -313,7 +366,7 @@ fn print_help() {
     --older-than <days>                 Delete files older than N days
     --max-size <size>                   Keep total size under limit
     --all                               Delete all files
-    --dry-run                           Show what would be deleted
+    --dry-run                           Show what would be deleted{hyprland_help}
   help, ?                               Show this help
   quit, exit, q                         Exit shell
 

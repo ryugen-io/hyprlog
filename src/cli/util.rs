@@ -38,6 +38,27 @@ pub fn build_logger(config: &Config, app_override: Option<&str>) -> Logger {
 
 /// Prints the help message.
 pub fn print_help() {
+    let hyprland_help = if cfg!(feature = "hyprland") {
+        "\n  hyprlog watch [options]                  Listen for Hyprland events\
+         \n    --events <e1,e2,...>                  Only show specific events\
+         \n    --min-level <level>                  Minimum event level\
+         \n  hyprlog hypr <command> [-j]              Send command to Hyprland\
+         \n    dispatch <dispatcher> [args]         Run a dispatcher\
+         \n    rollinglog [--follow]                Query or follow rolling log\n"
+    } else {
+        ""
+    };
+
+    let hyprland_examples = if cfg!(feature = "hyprland") {
+        "\n  hyprlog hypr monitors\
+         \n  hyprlog hypr -j workspaces\
+         \n  hyprlog hypr dispatch workspace 2\
+         \n  hyprlog watch\
+         \n  hyprlog watch --events openwindow,closewindow"
+    } else {
+        ""
+    };
+
     println!(
         "hyprlog - Flexible logging from the command line
 
@@ -59,7 +80,7 @@ Usage:
     --compress                              Compress files (gzip) instead of deleting
     --app <name>                            Filter by app name
     --all                                   Delete all files
-    --dry-run                               Show what would be done
+    --dry-run                               Show what would be done{hyprland_help}
   hyprlog help                              Show this help
   hyprlog version                           Show version
 
@@ -78,6 +99,6 @@ Examples:
   hyprlog cleanup --dry-run
   hyprlog cleanup --compress --older-than 7d --keep-last 5
   hyprlog cleanup --before 2024-01-01 --dry-run
-  echo '{{\"level\":\"info\",\"scope\":\"TEST\",\"msg\":\"hello\"}}' | hyprlog json"
+  echo '{{\"level\":\"info\",\"scope\":\"TEST\",\"msg\":\"hello\"}}' | hyprlog json{hyprland_examples}"
     );
 }

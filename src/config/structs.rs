@@ -272,6 +272,42 @@ pub struct PatternsConfig {
     pub quoted: Option<String>,
 }
 
+/// Hyprland IPC integration configuration.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
+pub struct HyprlandConfig {
+    /// Enable Hyprland IPC integration.
+    pub enabled: bool,
+    /// Override `HYPRLAND_INSTANCE_SIGNATURE` for socket path resolution.
+    pub instance_signature: Option<String>,
+    /// Override the socket directory path directly.
+    pub socket_dir: Option<String>,
+    /// Per-event log level overrides (event name -> level string).
+    pub event_levels: HashMap<String, String>,
+    /// Events to ignore entirely.
+    pub ignore_events: Vec<String>,
+    /// Scope string used for Hyprland log messages.
+    pub scope: String,
+    /// Runtime-only allowlist filter (not deserialized from config).
+    /// When set, only events in this list are processed.
+    #[serde(skip)]
+    pub event_filter: Option<Vec<String>>,
+}
+
+impl Default for HyprlandConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            instance_signature: None,
+            socket_dir: None,
+            event_levels: HashMap::new(),
+            ignore_events: Vec::new(),
+            scope: "HYPR".to_string(),
+            event_filter: None,
+        }
+    }
+}
+
 /// Per-app configuration overrides.
 ///
 /// Used in `[apps.X]` sections to override global settings for specific apps.

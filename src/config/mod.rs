@@ -6,8 +6,8 @@ mod structs;
 pub use error::ConfigError;
 pub use structs::{
     AppConfig, AppFileConfig, AppTerminalConfig, CleanupConfig, FileConfig, GeneralConfig,
-    HighlightConfig, IconsConfig, JsonConfig, MessageConfigFile, PatternsConfig, PresetConfig,
-    RetentionConfig, ScopeConfigFile, ShellConfig, TagConfigFile, TerminalConfig,
+    HighlightConfig, HyprlandConfig, IconsConfig, JsonConfig, MessageConfigFile, PatternsConfig,
+    PresetConfig, RetentionConfig, ScopeConfigFile, ShellConfig, TagConfigFile, TerminalConfig,
 };
 
 use crate::fmt::{Alignment, Color, IconType, Transform};
@@ -32,6 +32,8 @@ pub struct Config {
     pub file: FileConfig,
     /// JSON database output settings.
     pub json: JsonConfig,
+    /// Hyprland IPC integration settings.
+    pub hyprland: HyprlandConfig,
     /// Cleanup settings.
     pub cleanup: CleanupConfig,
     /// Tag formatting settings.
@@ -54,7 +56,9 @@ pub struct Config {
 }
 
 /// Extracts `source = "path"` lines from config content.
-fn extract_sources(content: &str) -> (Vec<String>, String) {
+#[doc(hidden)]
+#[must_use]
+pub fn extract_sources(content: &str) -> (Vec<String>, String) {
     let mut sources = Vec::new();
     let mut remaining = String::new();
 

@@ -125,5 +125,7 @@ pub use commands::{
     cmd_cleanup, cmd_json, cmd_log, cmd_log_shorthand, cmd_preset, cmd_presets, cmd_stats,
     cmd_themes,
 };
+#[cfg(feature = "hyprland")]
+pub use commands::{cmd_hypr, cmd_watch};
 pub use preset::PresetRunner;
 pub use util::{build_logger, expand_path, parse_level, print_help};

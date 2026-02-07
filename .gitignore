@@ -18,6 +18,10 @@ examples/cpp/build/
 Thumbs.db
 hyprlog.code-workspace
 
+# Fuzz
+fuzz/artifacts/
+fuzz/corpus/
+
 # Dev
 dev/generic_dev_kit/
 .serena/
