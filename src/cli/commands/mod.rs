@@ -18,4 +18,4 @@ pub use stats::cmd_stats;
 pub use themes::cmd_themes;
 
 #[cfg(feature = "hyprland")]
-pub use hyprland::{cmd_hypr, cmd_watch};
+pub use hyprland::cmd_watch;

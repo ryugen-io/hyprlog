@@ -47,21 +47,3 @@ fn parse_trims_whitespace() {
     assert_eq!(event.name, "workspace");
     assert_eq!(event.data, "3");
 }
-
-#[test]
-fn format_message_with_data() {
-    let event = HyprlandEvent {
-        name: "openwindow".to_string(),
-        data: "80a6f50,2,kitty,Kitty".to_string(),
-    };
-    assert_eq!(event.format_message(), "openwindow: 80a6f50,2,kitty,Kitty");
-}
-
-#[test]
-fn format_message_empty_data() {
-    let event = HyprlandEvent {
-        name: "configreloaded".to_string(),
-        data: String::new(),
-    };
-    assert_eq!(event.format_message(), "configreloaded");
-}

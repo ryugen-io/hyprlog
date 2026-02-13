@@ -11,7 +11,7 @@ use crate::config::PresetConfig;
 use crate::fmt::FormatValues;
 use crate::internal;
 use crate::level::Level;
-use crate::output::{LogRecord, Output, OutputError};
+use crate::output::{LogRecord, Output};
 use std::collections::HashMap;
 
 /// The main logger.
@@ -191,7 +191,7 @@ impl Logger {
     ///
     /// # Errors
     /// Returns the first error encountered.
-    pub fn flush(&self) -> Result<(), OutputError> {
+    pub fn flush(&self) -> Result<(), crate::Error> {
         for output in &self.outputs {
             output.flush()?;
         }

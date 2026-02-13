@@ -1,6 +1,6 @@
 //! JSON output for structured log database.
 
-use super::{LogRecord, Output, OutputError};
+use super::{LogRecord, Output};
 use crate::fmt::style;
 use crate::internal;
 
@@ -87,29 +87,12 @@ impl JsonOutput {
     }
 
     /// Resolves the file path (expands ~).
-    fn resolve_path(&self) -> Result<PathBuf, OutputError> {
+    fn resolve_path(&self) -> PathBuf {
         let path_str = self.file_path.to_string_lossy();
-
-        let path = if path_str.starts_with('~') {
-            if let Some(user_dirs) = directories::UserDirs::new() {
-                if let Some(home) = user_dirs.home_dir().to_str() {
-                    PathBuf::from(path_str.replacen('~', home, 1))
-                } else {
-                    return Err(OutputError::Format(
-                        "home directory path contains invalid utf-8".to_string(),
-                    ));
-                }
-            } else {
-                return Err(OutputError::Format(
-                    "could not resolve home directory".to_string(),
-                ));
-            }
-        } else {
-            self.file_path.clone()
-        };
-
+        let expanded = shellexpand::tilde(&path_str);
+        let path = PathBuf::from(expanded.as_ref());
         internal::trace("JSON", &format!("Resolved path: {}", path.display()));
-        Ok(path)
+        path
     }
 
     /// Creates a JSON entry from a log record.
@@ -131,13 +114,13 @@ impl JsonOutput {
 }
 
 impl Output for JsonOutput {
-    fn write(&self, record: &LogRecord) -> Result<(), OutputError> {
+    fn write(&self, record: &LogRecord) -> Result<(), crate::Error> {
         // Skip raw messages (they're typically continuation/formatting lines)
         if record.raw {
             return Ok(());
         }
 
-        let path = self.resolve_path()?;
+        let path = self.resolve_path();
         internal::trace("JSON", &format!("Writing to: {}", path.display()));
 
         // Create parent directories
@@ -161,7 +144,7 @@ impl Output for JsonOutput {
         // Create JSON entry
         let entry = self.create_entry(record);
         let json = serde_json::to_string(&entry)
-            .map_err(|e| OutputError::Format(format!("JSON serialization failed: {e}")))?;
+            .map_err(|e| crate::Error::Format(format!("JSON serialization failed: {e}")))?;
 
         // Append to file (JSONL format: one JSON object per line)
         let mut file = OpenOptions::new().create(true).append(true).open(&path)?;
@@ -171,7 +154,7 @@ impl Output for JsonOutput {
         Ok(())
     }
 
-    fn flush(&self) -> Result<(), OutputError> {
+    fn flush(&self) -> Result<(), crate::Error> {
         Ok(())
     }
 }

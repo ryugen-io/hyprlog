@@ -37,6 +37,7 @@
 // Core modules (always available)
 pub mod cleanup;
 pub mod config;
+pub mod error;
 pub mod fmt;
 pub mod internal;
 pub mod level;
@@ -61,14 +62,14 @@ pub mod ffi;
 
 // Re-exports for convenience
 pub use cleanup::{
-    CleanupError, CleanupOptions, CleanupResult, LogFileInfo, LogStats, cleanup, format_size,
-    parse_size, stats,
+    CleanupOptions, CleanupResult, LogFileInfo, LogStats, cleanup, format_size, parse_size, stats,
 };
 pub use config::Config;
+pub use error::Error;
 pub use fmt::{Alignment, Color, FormatValues, IconSet, IconType, TagConfig, Transform};
 pub use level::Level;
 pub use logger::{Logger, LoggerBuilder};
-pub use output::{FileOutput, Output, OutputError, TerminalOutput};
+pub use output::{FileOutput, Output, TerminalOutput};
 
 // CLI re-exports
 #[cfg(feature = "cli")]
@@ -76,7 +77,7 @@ pub use cli::PresetRunner;
 
 // Hyprland re-exports
 #[cfg(feature = "hyprland")]
-pub use hyprland::{EventListenerHandle, HyprlandError, HyprlandEvent};
+pub use hyprland::{EventListenerHandle, HyprlandEvent};
 
 // FFI re-exports
 #[cfg(feature = "ffi")]

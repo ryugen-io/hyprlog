@@ -7,16 +7,6 @@ use hyprlog::hyprland::socket;
 use std::path::PathBuf;
 
 #[test]
-fn socket1_path_format() {
-    let dir = PathBuf::from("/run/user/1000/hypr/abc123");
-    let path = socket::socket1_path(&dir);
-    assert_eq!(
-        path,
-        PathBuf::from("/run/user/1000/hypr/abc123/.socket.sock")
-    );
-}
-
-#[test]
 fn socket2_path_format() {
     let dir = PathBuf::from("/run/user/1000/hypr/abc123");
     let path = socket::socket2_path(&dir);
@@ -43,7 +33,7 @@ fn resolve_with_nonexistent_socket_dir_override_fails() {
         socket_dir: Some("/nonexistent/path/that/does/not/exist".to_string()),
         ..HyprlandConfig::default()
     };
-    assert!(socket::resolve_socket_dir(&config).is_err());
+    assert!(socket::resolve_socket_dir(&config).is_none());
 }
 
 #[test]

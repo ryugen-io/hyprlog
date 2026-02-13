@@ -2,6 +2,10 @@
 
 use crate::level::Level;
 use std::collections::HashMap;
+use std::sync::LazyLock;
+
+/// Cached default level map (built once).
+static DEFAULT_LEVELS: LazyLock<HashMap<&'static str, Level>> = LazyLock::new(default_level_map);
 
 /// Returns the default event name to log level mapping.
 ///
@@ -68,12 +72,9 @@ pub fn resolve_level<S: ::std::hash::BuildHasher>(
         }
     }
 
-    // Check default map
-    let defaults = default_level_map();
-    if let Some(&level) = defaults.get(event_name) {
-        return level;
-    }
-
-    // Fallback
-    Level::Info
+    // Check default map (cached)
+    DEFAULT_LEVELS
+        .get(event_name)
+        .copied()
+        .unwrap_or(Level::Info)
 }

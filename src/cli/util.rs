@@ -6,6 +6,9 @@ use crate::logger::Logger;
 use std::path::PathBuf;
 
 /// Parses a level string to a Level enum.
+///
+/// Only accepts the canonical names (trace, debug, info, warn, error).
+/// Case-insensitive.
 #[must_use]
 pub fn parse_level(s: &str) -> Option<Level> {
     match s.to_lowercase().as_str() {
@@ -41,19 +44,13 @@ pub fn print_help() {
     let hyprland_help = if cfg!(feature = "hyprland") {
         "\n  hyprlog watch [options]                  Listen for Hyprland events\
          \n    --events <e1,e2,...>                  Only show specific events\
-         \n    --min-level <level>                  Minimum event level\
-         \n  hyprlog hypr <command> [-j]              Send command to Hyprland\
-         \n    dispatch <dispatcher> [args]         Run a dispatcher\
-         \n    rollinglog [--follow]                Query or follow rolling log\n"
+         \n    --min-level <level>                  Minimum event level\n"
     } else {
         ""
     };
 
     let hyprland_examples = if cfg!(feature = "hyprland") {
-        "\n  hyprlog hypr monitors\
-         \n  hyprlog hypr -j workspaces\
-         \n  hyprlog hypr dispatch workspace 2\
-         \n  hyprlog watch\
+        "\n  hyprlog watch\
          \n  hyprlog watch --events openwindow,closewindow"
     } else {
         ""

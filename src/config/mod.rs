@@ -1,9 +1,7 @@
 //! Optional TOML configuration for hyprlog.
 
-mod error;
 mod structs;
 
-pub use error::ConfigError;
 pub use structs::{
     AppConfig, AppFileConfig, AppTerminalConfig, CleanupConfig, FileConfig, GeneralConfig,
     HighlightConfig, HyprlandConfig, IconsConfig, JsonConfig, MessageConfigFile, PatternsConfig,
@@ -90,7 +88,7 @@ impl Config {
     ///
     /// # Errors
     /// Returns error if config cannot be loaded.
-    pub fn load() -> Result<Self, ConfigError> {
+    pub fn load() -> Result<Self, crate::Error> {
         internal::debug("CONFIG", "Loading config from default location");
         let config_path = Self::get_config_path()?;
         let config = Self::load_with_sources(&config_path, &mut HashSet::new())?;
@@ -105,12 +103,12 @@ impl Config {
     ///
     /// # Errors
     /// Returns error if file cannot be read or parsed.
-    pub fn load_from(path: &Path) -> Result<Self, ConfigError> {
+    pub fn load_from(path: &Path) -> Result<Self, crate::Error> {
         Self::load_with_sources(path, &mut HashSet::new())
     }
 
     /// Loads configuration with source file processing and cycle detection.
-    fn load_with_sources(path: &Path, seen: &mut HashSet<PathBuf>) -> Result<Self, ConfigError> {
+    fn load_with_sources(path: &Path, seen: &mut HashSet<PathBuf>) -> Result<Self, crate::Error> {
         if !path.exists() {
             internal::debug("CONFIG", "Config file not found, using defaults");
             return Ok(Self::default());
@@ -123,7 +121,7 @@ impl Config {
                 "CONFIG",
                 &format!("Cyclic include detected: {}", canonical.display()),
             );
-            return Err(ConfigError::CyclicInclude(canonical));
+            return Err(crate::Error::CyclicInclude(canonical));
         }
 
         let content = fs::read_to_string(path)?;
@@ -218,10 +216,10 @@ impl Config {
     ///
     /// # Errors
     /// Returns error if path cannot be determined.
-    pub fn get_config_path() -> Result<PathBuf, ConfigError> {
+    pub fn get_config_path() -> Result<PathBuf, crate::Error> {
         directories::BaseDirs::new()
             .map(|dirs| dirs.config_dir().join("hypr").join("hyprlog.conf"))
-            .ok_or(ConfigError::ConfigDirNotFound)
+            .ok_or(crate::Error::ConfigDirNotFound)
     }
 
     /// Parses the general level string to a Level enum.

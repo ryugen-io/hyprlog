@@ -3,7 +3,7 @@
 use crate::fmt::{FormatTemplate, FormatValues, TagConfig, style};
 use crate::internal;
 
-use super::{LogRecord, Output, OutputError};
+use super::{LogRecord, Output};
 use chrono::Local;
 use std::cell::Cell;
 use std::fs::{self, OpenOptions};
@@ -130,34 +130,19 @@ impl FileOutput {
     }
 
     /// Resolves the base directory (expands ~).
-    fn resolve_base_dir(&self) -> Result<PathBuf, OutputError> {
-        let path = if self.base_dir.starts_with('~') {
-            if let Some(user_dirs) = directories::UserDirs::new() {
-                if let Some(home) = user_dirs.home_dir().to_str() {
-                    PathBuf::from(self.base_dir.replacen('~', home, 1))
-                } else {
-                    return Err(OutputError::Format(
-                        "home directory path contains invalid utf-8".to_string(),
-                    ));
-                }
-            } else {
-                return Err(OutputError::Format(
-                    "could not resolve home directory".to_string(),
-                ));
-            }
-        } else {
-            PathBuf::from(&self.base_dir)
-        };
+    fn resolve_base_dir(&self) -> PathBuf {
+        let expanded = shellexpand::tilde(&self.base_dir);
+        let path = PathBuf::from(expanded.as_ref());
         // Only log if not already inside a file write (prevents deadlock)
         if !IN_FILE_WRITE.with(Cell::get) {
             internal::trace("FILE", &format!("Resolved base dir: {}", path.display()));
         }
-        Ok(path)
+        path
     }
 
     /// Builds the full file path for a record.
-    fn build_path(&self, record: &LogRecord) -> Result<PathBuf, OutputError> {
-        let base = self.resolve_base_dir()?;
+    fn build_path(&self, record: &LogRecord) -> PathBuf {
+        let base = self.resolve_base_dir();
         let now = Local::now();
 
         let values = FormatValues::new()
@@ -173,7 +158,7 @@ impl FileOutput {
         let rel_path = self.path_template.render(&values);
         let filename = self.filename_template.render(&values);
 
-        Ok(base.join(rel_path).join(filename))
+        base.join(rel_path).join(filename)
     }
 
     /// Formats the content line.
@@ -199,7 +184,7 @@ impl FileOutput {
 
 impl FileOutput {
     /// Writes a buffered line to file.
-    fn write_buffered(buf: &BufferedLine) -> Result<(), OutputError> {
+    fn write_buffered(buf: &BufferedLine) -> Result<(), crate::Error> {
         // Create directories
         if let Some(parent) = buf.path.parent()
             && !parent.exists()
@@ -224,7 +209,7 @@ impl FileOutput {
     }
 
     /// Inner write implementation (called with recursion guard set).
-    fn write_inner(&self, record: &LogRecord) -> Result<(), OutputError> {
+    fn write_inner(&self, record: &LogRecord) -> Result<(), crate::Error> {
         let mut buffer = self.buffer.lock().unwrap();
 
         if record.raw {
@@ -243,7 +228,7 @@ impl FileOutput {
         }
 
         // Build new buffered line
-        let path = self.build_path(record)?;
+        let path = self.build_path(record);
 
         // Create directories if needed
         if let Some(parent) = path.parent()
@@ -267,7 +252,7 @@ impl FileOutput {
 }
 
 impl Output for FileOutput {
-    fn write(&self, record: &LogRecord) -> Result<(), OutputError> {
+    fn write(&self, record: &LogRecord) -> Result<(), crate::Error> {
         // Set recursion guard to prevent deadlock from internal logging
         IN_FILE_WRITE.with(|flag| flag.set(true));
         let result = self.write_inner(record);
@@ -275,7 +260,7 @@ impl Output for FileOutput {
         result
     }
 
-    fn flush(&self) -> Result<(), OutputError> {
+    fn flush(&self) -> Result<(), crate::Error> {
         let mut buffer = self.buffer.lock().unwrap();
         if let Some(ref buf) = *buffer {
             Self::write_buffered(buf)?;

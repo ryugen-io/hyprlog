@@ -1,6 +1,5 @@
 //! Log file collection utilities.
 
-use super::error::CleanupError;
 use super::stats::LogFileInfo;
 use crate::internal;
 use std::collections::HashSet;
@@ -13,7 +12,7 @@ pub(super) fn collect_log_files(
     dir: &Path,
     now: SystemTime,
     app_filter: Option<&str>,
-) -> Result<Vec<LogFileInfo>, CleanupError> {
+) -> Result<Vec<LogFileInfo>, crate::Error> {
     internal::debug(
         "CLEANUP",
         &format!("Collecting log files from {}", dir.display()),
@@ -38,7 +37,7 @@ fn collect_log_files_recursive(
     app_filter: Option<&str>,
     files: &mut Vec<LogFileInfo>,
     folders: &mut HashSet<String>,
-) -> Result<(), CleanupError> {
+) -> Result<(), crate::Error> {
     if !dir.is_dir() {
         return Ok(());
     }

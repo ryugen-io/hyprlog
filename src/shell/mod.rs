@@ -4,14 +4,13 @@ pub mod themes;
 
 use crate::cleanup::{CleanupOptions, cleanup, stats};
 use crate::cli::preset::PresetRunner;
+use crate::cli::util::{build_logger, expand_path, parse_level};
 use crate::config::Config;
 use crate::internal;
-use crate::level::Level;
 use crate::logger::Logger;
 use rustyline::error::ReadlineError;
 use rustyline::history::DefaultHistory;
 use rustyline::{DefaultEditor, Editor};
-use std::path::PathBuf;
 use std::str::FromStr;
 use themes::Theme;
 
@@ -21,24 +20,19 @@ use themes::Theme;
 /// Returns error message if shell cannot be initialized.
 pub fn run(config: &Config) -> Result<(), String> {
     internal::debug("SHELL", "Initializing shell...");
-    let logger = std::sync::Arc::new(build_logger(config));
+    let logger = std::sync::Arc::new(build_logger(config, None));
 
     // Start Hyprland event listener if enabled
     #[cfg(feature = "hyprland")]
     let _hyprland_handle = if config.hyprland.enabled {
-        match crate::hyprland::listener::start_listener(
+        let handle = crate::hyprland::listener::start_listener(
             std::sync::Arc::clone(&logger),
             &config.hyprland,
-        ) {
-            Ok(handle) => {
-                internal::info("HYPRLAND", "Background event listener started");
-                Some(handle)
-            }
-            Err(e) => {
-                internal::warn("HYPRLAND", &format!("Could not start event listener: {e}"));
-                None
-            }
+        );
+        if handle.is_some() {
+            internal::info("HYPRLAND", "Background event listener started");
         }
+        handle
     } else {
         None
     };
@@ -158,11 +152,6 @@ fn handle_command(line: &str, config: &Config, logger: &Logger) -> bool {
         #[cfg(feature = "hyprland")]
         "watch" => {
             shell_cmd_watch(&parts[1..], config, logger);
-            true
-        }
-        #[cfg(feature = "hyprland")]
-        "hypr" => {
-            shell_cmd_hypr(&parts[1..], config, logger);
             true
         }
         _ => {
@@ -319,37 +308,17 @@ fn cmd_cleanup(parts: &[&str], config: &Config, logger: &Logger) {
     }
 }
 
-fn parse_level(s: &str) -> Option<Level> {
-    match s.to_lowercase().as_str() {
-        "trace" => Some(Level::Trace),
-        "debug" => Some(Level::Debug),
-        "info" => Some(Level::Info),
-        "warn" => Some(Level::Warn),
-        "error" => Some(Level::Error),
-        _ => None,
-    }
-}
-
 #[cfg(feature = "hyprland")]
 fn shell_cmd_watch(parts: &[&str], config: &Config, logger: &Logger) {
     use crate::cli::cmd_watch;
     let _ = cmd_watch(parts, config, logger);
 }
 
-#[cfg(feature = "hyprland")]
-fn shell_cmd_hypr(parts: &[&str], config: &Config, logger: &Logger) {
-    use crate::cli::cmd_hypr;
-    let _ = cmd_hypr(parts, config, logger);
-}
-
 fn print_help() {
     let hyprland_help = if cfg!(feature = "hyprland") {
         "\n  watch [options]                       Listen for Hyprland events\
          \n    --events <e1,e2,...>               Only show specific events\
-         \n    --min-level <level>                Minimum event level\
-         \n  hypr <command> [-j]                   Send command to Hyprland\
-         \n    dispatch <dispatcher> [args]       Run a dispatcher\
-         \n    rollinglog [--follow]              Query or follow rolling log\n"
+         \n    --min-level <level>                Minimum event level\n"
     } else {
         ""
     };
@@ -374,20 +343,7 @@ Levels: trace, debug, info, warn, error"
     );
 }
 
-fn build_logger(config: &Config) -> Logger {
-    Logger::from_config_with(config, "hyprlog")
-}
-
-fn expand_path(path: &str) -> PathBuf {
-    if path.starts_with('~')
-        && let Some(user_dirs) = directories::UserDirs::new()
-    {
-        return PathBuf::from(path.replacen('~', user_dirs.home_dir().to_str().unwrap_or(""), 1));
-    }
-    PathBuf::from(path)
-}
-
-fn get_history_path() -> Option<PathBuf> {
+fn get_history_path() -> Option<std::path::PathBuf> {
     directories::ProjectDirs::from("", "", "hyprlog")
         .map(|dirs| dirs.data_dir().join("shell_history"))
 }

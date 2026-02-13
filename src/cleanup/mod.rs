@@ -1,14 +1,12 @@
 //! Log file cleanup and statistics.
 
 mod compress;
-mod error;
 mod files;
 mod options;
 mod result;
 mod size;
 mod stats;
 
-pub use error::CleanupError;
 pub use options::CleanupOptions;
 pub use result::CleanupResult;
 pub use size::{format_size, parse_size};
@@ -26,7 +24,7 @@ use std::time::SystemTime;
 /// # Errors
 /// Returns error if cleanup fails.
 #[allow(clippy::too_many_lines)]
-pub fn cleanup(base_dir: &Path, options: &CleanupOptions) -> Result<CleanupResult, CleanupError> {
+pub fn cleanup(base_dir: &Path, options: &CleanupOptions) -> Result<CleanupResult, crate::Error> {
     internal::info(
         "CLEANUP",
         &format!("Starting cleanup in {}", base_dir.display()),
@@ -193,7 +191,7 @@ pub fn cleanup(base_dir: &Path, options: &CleanupOptions) -> Result<CleanupResul
 ///
 /// # Errors
 /// Returns error if stats cannot be collected.
-pub fn stats(base_dir: &Path, app_filter: Option<&str>) -> Result<LogStats, CleanupError> {
+pub fn stats(base_dir: &Path, app_filter: Option<&str>) -> Result<LogStats, crate::Error> {
     let mut stats = LogStats::default();
     let now = SystemTime::now();
 

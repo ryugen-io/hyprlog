@@ -1,7 +1,7 @@
-//! Hyprland IPC CLI command implementations.
+//! Hyprland event listener CLI command.
 
 use crate::config::Config;
-use crate::hyprland::{command, listener, socket};
+use crate::hyprland::{listener, socket};
 use crate::internal;
 use crate::level::Level;
 use crate::logger::Logger;
@@ -106,12 +106,8 @@ pub fn cmd_watch(args: &[&str], config: &Config, logger: &Logger) -> ExitCode {
         }
     }
 
-    let socket_dir = match socket::resolve_socket_dir(&hyprland_config) {
-        Ok(dir) => dir,
-        Err(e) => {
-            internal::error("HYPRLAND", &format!("{e}"));
-            return ExitCode::FAILURE;
-        }
+    let Some(socket_dir) = socket::resolve_socket_dir(&hyprland_config) else {
+        return ExitCode::FAILURE;
     };
 
     let shutdown = install_shutdown_handler();
@@ -121,94 +117,5 @@ pub fn cmd_watch(args: &[&str], config: &Config, logger: &Logger) -> ExitCode {
         "Listening for Hyprland events... (Ctrl+C to stop)",
     );
     listener::run_event_loop(&socket_dir, logger, &hyprland_config, &shutdown);
-    ExitCode::SUCCESS
-}
-
-/// Handles `hyprlog hypr <command> [args...] [-j]`.
-///
-/// Sends commands to Hyprland via socket1 and prints the response.
-#[must_use]
-pub fn cmd_hypr(args: &[&str], config: &Config, logger: &Logger) -> ExitCode {
-    if args.is_empty() {
-        internal::error("HYPRLAND", "Usage: hyprlog hypr <command> [args...]");
-        internal::info(
-            "HYPRLAND",
-            "Commands: monitors, workspaces, clients, dispatch, rollinglog, ...",
-        );
-        return ExitCode::FAILURE;
-    }
-
-    let json_mode = args.contains(&"-j");
-    let filtered_args: Vec<&str> = args.iter().copied().filter(|&a| a != "-j").collect();
-
-    if filtered_args.is_empty() {
-        internal::error("HYPRLAND", "No command specified");
-        return ExitCode::FAILURE;
-    }
-
-    let cmd_name = filtered_args[0];
-
-    // Special case: dispatch
-    if cmd_name == "dispatch" {
-        return cmd_dispatch(&filtered_args, config, logger);
-    }
-
-    // Special case: rollinglog --follow
-    if cmd_name == "rollinglog" && filtered_args.contains(&"--follow") {
-        return cmd_rolling_log_follow(config, logger);
-    }
-
-    // General query
-    let full_cmd = filtered_args.join(" ");
-    let result = if json_mode {
-        command::query_json(&config.hyprland, &full_cmd)
-    } else {
-        command::query(&config.hyprland, &full_cmd)
-    };
-
-    match result {
-        Ok(response) => {
-            let trimmed = response.trim();
-            if !trimmed.is_empty() {
-                logger.raw(trimmed);
-            }
-            ExitCode::SUCCESS
-        }
-        Err(e) => {
-            internal::error("HYPRLAND", &format!("{e}"));
-            ExitCode::FAILURE
-        }
-    }
-}
-
-fn cmd_dispatch(args: &[&str], config: &Config, logger: &Logger) -> ExitCode {
-    if args.len() < 2 {
-        internal::error(
-            "HYPRLAND",
-            "Usage: hyprlog hypr dispatch <dispatcher> [args...]",
-        );
-        return ExitCode::FAILURE;
-    }
-    let dispatch_args = args[1..].join(" ");
-    match command::dispatch(&config.hyprland, &dispatch_args) {
-        Ok(response) => {
-            let trimmed = response.trim();
-            if !trimmed.is_empty() && trimmed != "ok" {
-                logger.raw(trimmed);
-            }
-            ExitCode::SUCCESS
-        }
-        Err(e) => {
-            internal::error("HYPRLAND", &format!("{e}"));
-            ExitCode::FAILURE
-        }
-    }
-}
-
-fn cmd_rolling_log_follow(config: &Config, logger: &Logger) -> ExitCode {
-    let shutdown = install_shutdown_handler();
-
-    logger.print("HYPRLAND", "Following rolling log... (Ctrl+C to stop)");
-    command::follow_rolling_log(&config.hyprland, logger, &config.hyprland.scope, &shutdown);
     ExitCode::SUCCESS
 }

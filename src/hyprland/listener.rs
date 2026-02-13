@@ -1,6 +1,5 @@
 //! Hyprland socket2 event listener.
 
-use super::error::HyprlandError;
 use super::event::HyprlandEvent;
 use super::level_map::resolve_level;
 use super::socket;
@@ -59,25 +58,19 @@ pub fn run_event_loop(
     let max_backoff = Duration::from_secs(30);
 
     while !shutdown.load(Ordering::Relaxed) {
-        match socket::connect_event_stream(socket_dir) {
-            Ok(reader) => {
-                internal::info("HYPRLAND", "Connected to event socket");
-                backoff = Duration::from_millis(100); // Reset on successful connect
-                process_events(reader, logger, config, shutdown);
+        if let Some(reader) = socket::connect_event_stream(socket_dir) {
+            internal::info("HYPRLAND", "Connected to event socket");
+            backoff = Duration::from_millis(100);
+            process_events(reader, logger, config, shutdown);
 
-                if !shutdown.load(Ordering::Relaxed) {
-                    internal::warn("HYPRLAND", "Event socket disconnected, reconnecting...");
-                }
+            if !shutdown.load(Ordering::Relaxed) {
+                internal::warn("HYPRLAND", "Event socket disconnected, reconnecting...");
             }
-            Err(e) => {
-                if shutdown.load(Ordering::Relaxed) {
-                    break;
-                }
-                internal::error(
-                    "HYPRLAND",
-                    &format!("Connection failed: {e}, retrying in {backoff:?}"),
-                );
+        } else {
+            if shutdown.load(Ordering::Relaxed) {
+                break;
             }
+            internal::error("HYPRLAND", &format!("Retrying in {backoff:?}"));
         }
 
         if !shutdown.load(Ordering::Relaxed) {
@@ -141,27 +134,28 @@ fn process_events(
 
 /// Starts the event listener in a background thread.
 ///
-/// Returns a handle that can be used to stop the listener.
-///
-/// # Errors
-/// Returns error if the socket directory cannot be resolved.
-pub fn start_listener(
-    logger: Arc<Logger>,
-    config: &HyprlandConfig,
-) -> Result<EventListenerHandle, HyprlandError> {
+/// Returns a handle that can be used to stop the listener, or `None` if the
+/// socket directory cannot be resolved or the thread fails to spawn.
+#[must_use]
+pub fn start_listener(logger: Arc<Logger>, config: &HyprlandConfig) -> Option<EventListenerHandle> {
     let socket_dir = socket::resolve_socket_dir(config)?;
     let shutdown = Arc::new(AtomicBool::new(false));
     let shutdown_clone = Arc::clone(&shutdown);
     let config = config.clone();
 
-    let thread = thread::Builder::new()
+    let thread = match thread::Builder::new()
         .name("hyprland-listener".into())
         .spawn(move || {
             run_event_loop(&socket_dir, &logger, &config, &shutdown_clone);
-        })
-        .map_err(HyprlandError::ConnectionFailed)?;
+        }) {
+        Ok(handle) => handle,
+        Err(e) => {
+            internal::error("HYPRLAND", &format!("Failed to spawn listener thread: {e}"));
+            return None;
+        }
+    };
 
-    Ok(EventListenerHandle {
+    Some(EventListenerHandle {
         shutdown,
         thread: Some(thread),
     })

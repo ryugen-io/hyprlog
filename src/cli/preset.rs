@@ -5,26 +5,6 @@ use crate::internal;
 use crate::level::Level;
 use crate::logger::Logger;
 
-/// Error type for preset operations.
-#[derive(Debug)]
-pub enum PresetError {
-    /// Preset not found.
-    NotFound(String),
-    /// Invalid level in preset.
-    InvalidLevel(String),
-}
-
-impl std::fmt::Display for PresetError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::NotFound(name) => write!(f, "preset not found: {name}"),
-            Self::InvalidLevel(level) => write!(f, "invalid level in preset: {level}"),
-        }
-    }
-}
-
-impl std::error::Error for PresetError {}
-
 /// Runs presets from configuration.
 pub struct PresetRunner<'a> {
     config: &'a Config,
@@ -42,11 +22,11 @@ impl<'a> PresetRunner<'a> {
     ///
     /// # Errors
     /// Returns error if preset not found or has invalid level.
-    pub fn run(&self, name: &str) -> Result<(), PresetError> {
+    pub fn run(&self, name: &str) -> Result<(), crate::Error> {
         internal::trace("PRESET", &format!("Looking up preset: {name}"));
         let preset = self.config.presets.get(name).ok_or_else(|| {
             internal::warn("PRESET", &format!("Preset not found: {name}"));
-            PresetError::NotFound(name.to_string())
+            crate::Error::PresetNotFound(name.to_string())
         })?;
 
         internal::debug(
@@ -61,7 +41,7 @@ impl<'a> PresetRunner<'a> {
         let level: Level = preset
             .level
             .parse()
-            .map_err(|_| PresetError::InvalidLevel(preset.level.clone()))?;
+            .map_err(|_| crate::Error::InvalidLevel(preset.level.clone()))?;
 
         let scope = preset.scope.as_deref().unwrap_or("LOG");
         let app_name = preset.app_name.as_deref();
@@ -101,7 +81,10 @@ mod tests {
 
         let result = runner.run("nonexistent");
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), PresetError::NotFound(_)));
+        assert!(matches!(
+            result.unwrap_err(),
+            crate::Error::PresetNotFound(_)
+        ));
     }
 
     #[test]

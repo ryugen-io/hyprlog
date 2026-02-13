@@ -1,6 +1,6 @@
 //! File compression and directory cleanup utilities.
 
-use super::error::CleanupError;
+use crate::Error;
 use flate2::Compression;
 use flate2::write::GzEncoder;
 use std::fs::{self, File};
@@ -10,7 +10,7 @@ use std::path::Path;
 /// Compresses a file using gzip.
 ///
 /// Returns the bytes saved (original size - compressed size).
-pub(super) fn compress_file(path: &Path) -> Result<u64, CleanupError> {
+pub(super) fn compress_file(path: &Path) -> Result<u64, Error> {
     let input = File::open(path)?;
     let original_size = input.metadata()?.len();
     let mut reader = BufReader::new(input);
@@ -41,7 +41,7 @@ pub(super) fn compress_file(path: &Path) -> Result<u64, CleanupError> {
 }
 
 /// Cleans up empty directories recursively.
-pub(super) fn cleanup_empty_dirs(dir: &Path) -> Result<(), CleanupError> {
+pub(super) fn cleanup_empty_dirs(dir: &Path) -> Result<(), Error> {
     if !dir.is_dir() {
         return Ok(());
     }

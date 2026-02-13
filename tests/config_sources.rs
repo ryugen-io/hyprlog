@@ -1,5 +1,5 @@
 use hyprlog::Config;
-use hyprlog::config::ConfigError;
+use hyprlog::Error;
 use std::fs;
 use tempfile::TempDir;
 
@@ -72,5 +72,5 @@ fn load_with_cyclic_sources_errors() {
     fs::write(&b_path, b_content).unwrap();
 
     let err = Config::load_from(&a_path).unwrap_err();
-    assert!(matches!(err, ConfigError::CyclicInclude(_)));
+    assert!(matches!(err, Error::CyclicInclude(_)));
 }

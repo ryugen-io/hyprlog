@@ -43,44 +43,11 @@ pub trait Output: Send + Sync {
     ///
     /// # Errors
     /// Returns an error if writing fails.
-    fn write(&self, record: &LogRecord) -> Result<(), OutputError>;
+    fn write(&self, record: &LogRecord) -> Result<(), crate::Error>;
 
     /// Flushes any buffered output.
     ///
     /// # Errors
     /// Returns an error if flushing fails.
-    fn flush(&self) -> Result<(), OutputError>;
-}
-
-/// Error type for output operations.
-#[derive(Debug)]
-pub enum OutputError {
-    /// I/O error.
-    Io(std::io::Error),
-    /// Format error.
-    Format(String),
-}
-
-impl std::fmt::Display for OutputError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Io(e) => write!(f, "I/O error: {e}"),
-            Self::Format(s) => write!(f, "format error: {s}"),
-        }
-    }
-}
-
-impl std::error::Error for OutputError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Self::Io(e) => Some(e),
-            Self::Format(_) => None,
-        }
-    }
-}
-
-impl From<std::io::Error> for OutputError {
-    fn from(e: std::io::Error) -> Self {
-        Self::Io(e)
-    }
+    fn flush(&self) -> Result<(), crate::Error>;
 }

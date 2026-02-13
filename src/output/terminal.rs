@@ -7,7 +7,7 @@ use crate::fmt::{
 };
 use crate::level::Level;
 
-use super::{LogRecord, Output, OutputError};
+use super::{LogRecord, Output};
 use std::collections::HashMap;
 use std::io::{self, Write};
 
@@ -198,7 +198,7 @@ impl TerminalOutput {
 }
 
 impl Output for TerminalOutput {
-    fn write(&self, record: &LogRecord) -> Result<(), OutputError> {
+    fn write(&self, record: &LogRecord) -> Result<(), crate::Error> {
         // Raw mode: just output the message without formatting
         if record.raw {
             writeln!(io::stdout(), "{}", record.message)?;
@@ -217,7 +217,7 @@ impl Output for TerminalOutput {
         Ok(())
     }
 
-    fn flush(&self) -> Result<(), OutputError> {
+    fn flush(&self) -> Result<(), crate::Error> {
         io::stdout().flush()?;
         io::stderr().flush()?;
         Ok(())
