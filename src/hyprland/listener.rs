@@ -6,11 +6,14 @@ use super::socket;
 use crate::config::HyprlandConfig;
 use crate::internal;
 use crate::logger::Logger;
-use std::io::{self, BufRead};
+use hypr_sdk::ipc::EventStream;
+use hypr_sdk::ipc::socket as ipc_socket;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
+use tokio::runtime::Builder;
+use tokio::time;
 
 /// Handle to a running event listener thread.
 ///
@@ -54,27 +57,52 @@ pub fn run_event_loop(
     config: &HyprlandConfig,
     shutdown: &AtomicBool,
 ) {
+    let socket_path = socket::socket2_path(socket_dir);
+
+    let runtime = match Builder::new_current_thread().enable_time().build() {
+        Ok(runtime) => runtime,
+        Err(e) => {
+            internal::error("HYPRLAND", &format!("Failed to create Tokio runtime: {e}"));
+            return;
+        }
+    };
+
+    runtime.block_on(async {
+        run_event_loop_async(&socket_path, logger, config, shutdown).await;
+    });
+}
+
+async fn run_event_loop_async(
+    socket_path: &std::path::Path,
+    logger: &Logger,
+    config: &HyprlandConfig,
+    shutdown: &AtomicBool,
+) {
     let mut backoff = Duration::from_millis(100);
     let max_backoff = Duration::from_secs(30);
 
     while !shutdown.load(Ordering::Relaxed) {
-        if let Some(reader) = socket::connect_event_stream(socket_dir) {
-            internal::info("HYPRLAND", "Connected to event socket");
-            backoff = Duration::from_millis(100);
-            process_events(reader, logger, config, shutdown);
+        match ipc_socket::connect_event_stream(socket_path).await {
+            Ok(stream) => {
+                internal::info("HYPRLAND", "Connected to event socket");
+                backoff = Duration::from_millis(100);
+                process_events(EventStream::new(stream), logger, config, shutdown).await;
 
-            if !shutdown.load(Ordering::Relaxed) {
-                internal::warn("HYPRLAND", "Event socket disconnected, reconnecting...");
+                if !shutdown.load(Ordering::Relaxed) {
+                    internal::warn("HYPRLAND", "Event socket disconnected, reconnecting...");
+                }
             }
-        } else {
-            if shutdown.load(Ordering::Relaxed) {
-                break;
+            Err(e) => {
+                if shutdown.load(Ordering::Relaxed) {
+                    break;
+                }
+                internal::error("HYPRLAND", &format!("Failed to connect: {e}"));
+                internal::error("HYPRLAND", &format!("Retrying in {backoff:?}"));
             }
-            internal::error("HYPRLAND", &format!("Retrying in {backoff:?}"));
         }
 
         if !shutdown.load(Ordering::Relaxed) {
-            thread::sleep(backoff);
+            time::sleep(backoff).await;
             backoff = (backoff * 2).min(max_backoff);
         }
     }
@@ -83,50 +111,45 @@ pub fn run_event_loop(
 }
 
 /// Processes events from a connected socket2 stream.
-fn process_events(
-    mut reader: io::BufReader<std::os::unix::net::UnixStream>,
+async fn process_events(
+    mut events: EventStream,
     logger: &Logger,
     config: &HyprlandConfig,
     shutdown: &AtomicBool,
 ) {
-    let mut line = String::new();
-
     loop {
         if shutdown.load(Ordering::Relaxed) {
             break;
         }
 
-        line.clear();
-        match reader.read_line(&mut line) {
-            Ok(0) => break, // EOF — socket closed
-            Ok(_) => {
-                if let Some(event) = HyprlandEvent::parse(&line) {
-                    // Skip ignored events
-                    if config.ignore_events.iter().any(|e| e == &event.name) {
+        match time::timeout(Duration::from_secs(1), events.next_event()).await {
+            Ok(Ok(Some(event))) => {
+                let event = HyprlandEvent::from_sdk(&event);
+
+                // Skip ignored events
+                if config.ignore_events.iter().any(|e| e == &event.name) {
+                    continue;
+                }
+
+                // If an allowlist filter is set, skip events not in it
+                if let Some(ref filter) = config.event_filter {
+                    if !filter.iter().any(|f| f == &event.name) {
                         continue;
                     }
-
-                    // If an allowlist filter is set, skip events not in it
-                    if let Some(ref filter) = config.event_filter {
-                        if !filter.iter().any(|f| f == &event.name) {
-                            continue;
-                        }
-                    }
-
-                    let level = resolve_level(&event.name, &config.event_levels);
-                    logger.log(level, &config.scope, &event.format_message());
                 }
+
+                let level = resolve_level(&event.name, &config.event_levels);
+                logger.log(level, &config.scope, &event.format_message());
             }
-            Err(ref e)
-                if e.kind() == io::ErrorKind::WouldBlock || e.kind() == io::ErrorKind::TimedOut =>
-            {
-                // Read timeout — loop will check shutdown flag
-            }
-            Err(e) => {
+            Ok(Ok(None)) => break, // EOF — socket closed
+            Ok(Err(e)) => {
                 if !shutdown.load(Ordering::Relaxed) {
                     internal::warn("HYPRLAND", &format!("Read error: {e}"));
                 }
                 break;
+            }
+            Err(_) => {
+                // Timeout used to periodically check shutdown.
             }
         }
     }

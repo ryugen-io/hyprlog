@@ -39,6 +39,15 @@ impl HyprlandEvent {
         })
     }
 
+    /// Converts a typed `hypr-sdk` event into a `HyprlandEvent`.
+    #[must_use]
+    pub fn from_sdk(event: &SdkEvent) -> Self {
+        Self {
+            name: canonical_event_name(event).into_owned(),
+            data: event_data(event),
+        }
+    }
+
     /// Formats the event as a human-readable log message.
     ///
     /// Returns `"eventname: data"` or just `"eventname"` when data is empty.
@@ -99,4 +108,94 @@ fn canonical_event_name(event: &SdkEvent) -> Cow<'_, str> {
         SdkEvent::Custom { .. } => Cow::Borrowed("custom"),
         SdkEvent::Unknown { name, .. } => Cow::Borrowed(name.as_str()),
     }
+}
+
+fn event_data(event: &SdkEvent) -> String {
+    match event {
+        SdkEvent::Workspace { name }
+        | SdkEvent::CreateWorkspace { name }
+        | SdkEvent::DestroyWorkspace { name }
+        | SdkEvent::MonitorAdded { name }
+        | SdkEvent::MonitorRemoved { name }
+        | SdkEvent::OpenLayer { namespace: name }
+        | SdkEvent::CloseLayer { namespace: name }
+        | SdkEvent::Submap { name } => name.clone(),
+        SdkEvent::WorkspaceV2 { id, name }
+        | SdkEvent::CreateWorkspaceV2 { id, name }
+        | SdkEvent::DestroyWorkspaceV2 { id, name } => format!("{id},{name}"),
+        SdkEvent::MoveWorkspace { name, monitor } => format!("{name},{monitor}"),
+        SdkEvent::MoveWorkspaceV2 { id, name, monitor } => format!("{id},{name},{monitor}"),
+        SdkEvent::RenameWorkspace { id, new_name } => format!("{id},{new_name}"),
+        SdkEvent::FocusedMon { monitor, workspace } => format!("{monitor},{workspace}"),
+        SdkEvent::FocusedMonV2 {
+            monitor,
+            workspace_id,
+        } => format!("{monitor},{workspace_id}"),
+        SdkEvent::MonitorAddedV2 {
+            id,
+            name,
+            description,
+        }
+        | SdkEvent::MonitorRemovedV2 {
+            id,
+            name,
+            description,
+        } => format!("{id},{name},{description}"),
+        SdkEvent::ActiveSpecial { name, monitor } => format!("{name},{monitor}"),
+        SdkEvent::ActiveSpecialV2 { id, name, monitor } => format!("{id},{name},{monitor}"),
+        SdkEvent::ActiveWindow { class, title } => format!("{class},{title}"),
+        SdkEvent::ActiveWindowV2 { address }
+        | SdkEvent::CloseWindow { address }
+        | SdkEvent::WindowTitle { address }
+        | SdkEvent::Urgent { address }
+        | SdkEvent::MoveIntoGroup { address }
+        | SdkEvent::MoveOutOfGroup { address } => address.to_string(),
+        SdkEvent::OpenWindow {
+            address,
+            workspace,
+            class,
+            title,
+        } => format!("{address},{workspace},{class},{title}"),
+        SdkEvent::WindowTitleV2 { address, title } => format!("{address},{title}"),
+        SdkEvent::MoveWindow { address, workspace } => format!("{address},{workspace}"),
+        SdkEvent::MoveWindowV2 {
+            address,
+            workspace_id,
+            workspace_name,
+        } => format!("{address},{workspace_id},{workspace_name}"),
+        SdkEvent::Fullscreen { enabled } => bool_as_int(*enabled).to_string(),
+        SdkEvent::ChangeFloatingMode { address, is_tiled } => {
+            format!("{address},{}", bool_as_int(*is_tiled))
+        }
+        SdkEvent::Minimized { address, minimized } => {
+            format!("{address},{}", bool_as_int(*minimized))
+        }
+        SdkEvent::Pin { address, pinned } => format!("{address},{}", bool_as_int(*pinned)),
+        SdkEvent::ToggleGroup { state, addresses } => {
+            let mut data = bool_as_int(*state).to_string();
+            if !addresses.is_empty() {
+                data.push(',');
+                data.push_str(
+                    &addresses
+                        .iter()
+                        .map(ToString::to_string)
+                        .collect::<Vec<_>>()
+                        .join(","),
+                );
+            }
+            data
+        }
+        SdkEvent::LockGroups { locked } => bool_as_int(*locked).to_string(),
+        SdkEvent::IgnoreGroupLock { enabled } => bool_as_int(*enabled).to_string(),
+        SdkEvent::ActiveLayout { keyboard, layout } => format!("{keyboard},{layout}"),
+        SdkEvent::Bell { address } => address.clone(),
+        SdkEvent::Screencast { active, owner } => format!("{},{}", bool_as_int(*active), owner),
+        SdkEvent::ConfigReloaded => String::new(),
+        SdkEvent::Custom { data } => data.clone(),
+        SdkEvent::Unknown { data, .. } => data.clone(),
+    }
+}
+
+const fn bool_as_int(value: bool) -> u8 {
+    if value { 1 } else { 0 }
 }

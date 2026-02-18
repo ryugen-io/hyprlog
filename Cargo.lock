@@ -521,6 +521,7 @@ dependencies = [
  "serde_json",
  "shellexpand",
  "tempfile",
+ "tokio",
  "toml",
  "ulid",
 ]

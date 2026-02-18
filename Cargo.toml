@@ -11,7 +11,7 @@ repository = "https://github.com/ryugen-io/hyprlog"
 default = ["cli"]
 cli = ["dep:clap", "dep:rustyline"]
 ffi = []
-hyprland = ["dep:hypr-sdk"]
+hyprland = ["dep:hypr-sdk", "dep:tokio"]
 
 [lib]
 name = "hyprlog"
@@ -43,6 +43,7 @@ toml = "0.8"
 ulid = "1"
 # hypr-sdk = { git = "ssh://git@github.com/ryugen-io/hypr-sdk.git", branch = "main", default-features = false, optional = true }
 hypr-sdk = { path = "../../hlrsgw", optional = true }
+tokio = { version = "1", features = ["rt", "time"], optional = true }
 
 # CLI (optional)
 clap = { version = "4", features = ["derive"], optional = true }
