@@ -59,7 +59,11 @@ pub fn run_event_loop(
 ) {
     let socket_path = socket::socket2_path(socket_dir);
 
-    let runtime = match Builder::new_current_thread().enable_time().build() {
+    let runtime = match Builder::new_current_thread()
+        .enable_io()
+        .enable_time()
+        .build()
+    {
         Ok(runtime) => runtime,
         Err(e) => {
             internal::error("HYPRLAND", &format!("Failed to create Tokio runtime: {e}"));

@@ -26,6 +26,38 @@ fn run_returns_error_for_invalid_level() {
 }
 
 #[test]
+fn run_returns_error_for_missing_preset() {
+    let config = Config::default();
+    let logger = Logger::builder().build();
+    let runner = PresetRunner::new(&config, &logger);
+
+    let result = runner.run("nonexistent");
+    assert!(result.is_err());
+    assert!(matches!(
+        result.unwrap_err(),
+        hyprlog::Error::PresetNotFound(_)
+    ));
+}
+
+#[test]
+fn list_empty_presets_is_empty() {
+    let config = Config::default();
+    let logger = Logger::builder().build();
+    let runner = PresetRunner::new(&config, &logger);
+
+    assert!(runner.list().is_empty());
+}
+
+#[test]
+fn exists_returns_false_for_unknown_preset() {
+    let config = Config::default();
+    let logger = Logger::builder().build();
+    let runner = PresetRunner::new(&config, &logger);
+
+    assert!(!runner.exists("startup"));
+}
+
+#[test]
 fn run_ok_and_list_contains_entry() {
     let mut config = Config::default();
     config.presets.insert(

@@ -149,28 +149,37 @@ fn event_data(event: &SdkEvent) -> String {
         | SdkEvent::WindowTitle { address }
         | SdkEvent::Urgent { address }
         | SdkEvent::MoveIntoGroup { address }
-        | SdkEvent::MoveOutOfGroup { address } => address.to_string(),
+        | SdkEvent::MoveOutOfGroup { address } => format_address(address),
         SdkEvent::OpenWindow {
             address,
             workspace,
             class,
             title,
-        } => format!("{address},{workspace},{class},{title}"),
-        SdkEvent::WindowTitleV2 { address, title } => format!("{address},{title}"),
-        SdkEvent::MoveWindow { address, workspace } => format!("{address},{workspace}"),
+        } => format!("{},{workspace},{class},{title}", format_address(address)),
+        SdkEvent::WindowTitleV2 { address, title } => {
+            format!("{},{}", format_address(address), title)
+        }
+        SdkEvent::MoveWindow { address, workspace } => {
+            format!("{},{}", format_address(address), workspace)
+        }
         SdkEvent::MoveWindowV2 {
             address,
             workspace_id,
             workspace_name,
-        } => format!("{address},{workspace_id},{workspace_name}"),
+        } => format!(
+            "{},{workspace_id},{workspace_name}",
+            format_address(address)
+        ),
         SdkEvent::Fullscreen { enabled } => bool_as_int(*enabled).to_string(),
         SdkEvent::ChangeFloatingMode { address, is_tiled } => {
-            format!("{address},{}", bool_as_int(*is_tiled))
+            format!("{},{}", format_address(address), bool_as_int(*is_tiled))
         }
         SdkEvent::Minimized { address, minimized } => {
-            format!("{address},{}", bool_as_int(*minimized))
+            format!("{},{}", format_address(address), bool_as_int(*minimized))
         }
-        SdkEvent::Pin { address, pinned } => format!("{address},{}", bool_as_int(*pinned)),
+        SdkEvent::Pin { address, pinned } => {
+            format!("{},{}", format_address(address), bool_as_int(*pinned))
+        }
         SdkEvent::ToggleGroup { state, addresses } => {
             let mut data = bool_as_int(*state).to_string();
             if !addresses.is_empty() {
@@ -178,7 +187,7 @@ fn event_data(event: &SdkEvent) -> String {
                 data.push_str(
                     &addresses
                         .iter()
-                        .map(ToString::to_string)
+                        .map(format_address)
                         .collect::<Vec<_>>()
                         .join(","),
                 );
@@ -198,4 +207,8 @@ fn event_data(event: &SdkEvent) -> String {
 
 const fn bool_as_int(value: bool) -> u8 {
     if value { 1 } else { 0 }
+}
+
+fn format_address(address: &hypr_sdk::types::common::WindowAddress) -> String {
+    format!("{:x}", address.0)
 }
