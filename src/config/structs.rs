@@ -288,6 +288,8 @@ pub struct HyprlandConfig {
     pub ignore_events: Vec<String>,
     /// Scope string used for Hyprland log messages.
     pub scope: String,
+    /// Per-event scope overrides (event name -> scope string).
+    pub event_scopes: HashMap<String, String>,
     /// Runtime-only allowlist filter (not deserialized from config).
     /// When set, only events in this list are processed.
     #[serde(skip)]
@@ -303,6 +305,7 @@ impl Default for HyprlandConfig {
             event_levels: HashMap::new(),
             ignore_events: Vec::new(),
             scope: "HYPR".to_string(),
+            event_scopes: HashMap::new(),
             event_filter: None,
         }
     }

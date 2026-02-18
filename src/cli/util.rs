@@ -37,7 +37,7 @@ pub fn expand_path(path: &str) -> PathBuf {
 /// If no override is given, the app name is auto-detected from the binary name.
 #[must_use]
 pub fn build_logger(config: &Config, app_override: Option<&str>) -> Logger {
-    let app_name = app_override.map_or_else(detect_binary_name, |s| s.to_string());
+    let app_name = app_override.map_or_else(detect_binary_name, ToString::to_string);
     Logger::from_config_with(config, &app_name)
 }
 
@@ -48,8 +48,10 @@ fn detect_binary_name() -> String {
         .as_deref()
         .map(std::path::Path::new)
         .and_then(std::path::Path::file_name)
-        .map(|n| n.to_string_lossy().into_owned())
-        .unwrap_or_else(|| "unknown".to_string())
+        .map_or_else(
+            || "unknown".to_string(),
+            |n| n.to_string_lossy().into_owned(),
+        )
 }
 
 /// Prints the help message.

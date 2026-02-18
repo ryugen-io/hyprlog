@@ -100,7 +100,10 @@ pub fn cmd_watch(args: &[&str], config: &Config, logger: &Logger) -> ExitCode {
                     }
                 }
             } else {
-                internal::error("HYPRLAND", &format!("Invalid level: {level_str}"));
+                internal::error(
+                    hyprland_config.scope.as_str(),
+                    &format!("Invalid level: {level_str}"),
+                );
                 return ExitCode::FAILURE;
             }
         }
@@ -113,7 +116,7 @@ pub fn cmd_watch(args: &[&str], config: &Config, logger: &Logger) -> ExitCode {
     let shutdown = install_shutdown_handler();
 
     logger.print(
-        "HYPRLAND",
+        hyprland_config.scope.as_str(),
         "Listening for Hyprland events... (Ctrl+C to stop)",
     );
     listener::run_event_loop(&socket_dir, logger, &hyprland_config, &shutdown);

@@ -29,7 +29,7 @@ pub struct CleanupResult {
 impl CleanupResult {
     /// Returns the number of files deleted.
     #[must_use]
-    pub fn count(&self) -> usize {
+    pub const fn count(&self) -> usize {
         if self.deleted.is_empty() {
             self.would_delete.len()
         } else {
@@ -49,7 +49,7 @@ impl CleanupResult {
 
     /// Returns the number of files compressed.
     #[must_use]
-    pub fn compressed_count(&self) -> usize {
+    pub const fn compressed_count(&self) -> usize {
         if self.compressed.is_empty() {
             self.would_compress.len()
         } else {

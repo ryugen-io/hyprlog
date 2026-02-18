@@ -66,7 +66,10 @@ pub fn run_event_loop(
     {
         Ok(runtime) => runtime,
         Err(e) => {
-            internal::error("HYPRLAND", &format!("Failed to create Tokio runtime: {e}"));
+            internal::error(
+                config.scope.as_str(),
+                &format!("Failed to create Tokio runtime: {e}"),
+            );
             return;
         }
     };
@@ -84,24 +87,25 @@ async fn run_event_loop_async(
 ) {
     let mut backoff = Duration::from_millis(100);
     let max_backoff = Duration::from_secs(30);
+    let scope = config.scope.as_str();
 
     while !shutdown.load(Ordering::Relaxed) {
         match ipc_socket::connect_event_stream(socket_path).await {
             Ok(stream) => {
-                internal::info("HYPRLAND", "Connected to event socket");
+                internal::info(scope, "Connected to event socket");
                 backoff = Duration::from_millis(100);
                 process_events(EventStream::new(stream), logger, config, shutdown).await;
 
                 if !shutdown.load(Ordering::Relaxed) {
-                    internal::warn("HYPRLAND", "Event socket disconnected, reconnecting...");
+                    internal::warn(scope, "Event socket disconnected, reconnecting...");
                 }
             }
             Err(e) => {
                 if shutdown.load(Ordering::Relaxed) {
                     break;
                 }
-                internal::error("HYPRLAND", &format!("Failed to connect: {e}"));
-                internal::error("HYPRLAND", &format!("Retrying in {backoff:?}"));
+                internal::error(scope, &format!("Failed to connect: {e}"));
+                internal::error(scope, &format!("Retrying in {backoff:?}"));
             }
         }
 
@@ -111,7 +115,7 @@ async fn run_event_loop_async(
         }
     }
 
-    internal::debug("HYPRLAND", "Event listener stopped");
+    internal::debug(scope, "Event listener stopped");
 }
 
 /// Processes events from a connected socket2 stream.
@@ -121,6 +125,7 @@ async fn process_events(
     config: &HyprlandConfig,
     shutdown: &AtomicBool,
 ) {
+    let scope = config.scope.as_str();
     loop {
         if shutdown.load(Ordering::Relaxed) {
             break;
@@ -143,12 +148,13 @@ async fn process_events(
                 }
 
                 let level = resolve_level(&event.name, &config.event_levels);
-                logger.log(level, &config.scope, &event.format_message());
+                let scope = resolve_event_scope(config, &event);
+                logger.log(level, &scope, &event.format_message());
             }
             Ok(Ok(None)) => break, // EOF — socket closed
             Ok(Err(e)) => {
                 if !shutdown.load(Ordering::Relaxed) {
-                    internal::warn("HYPRLAND", &format!("Read error: {e}"));
+                    internal::warn(scope, &format!("Read error: {e}"));
                 }
                 break;
             }
@@ -157,6 +163,32 @@ async fn process_events(
             }
         }
     }
+}
+
+fn resolve_event_scope(config: &HyprlandConfig, event: &HyprlandEvent) -> String {
+    if let Some(scope) = config.event_scopes.get(&event.name) {
+        return scope.clone();
+    }
+
+    if event.name == "custom" {
+        return "hyprctl".to_string();
+    }
+
+    if event.name == "openwindow"
+        && let Some(class) = event.data.splitn(4, ',').nth(2)
+        && !class.is_empty()
+    {
+        return class.to_string();
+    }
+
+    if event.name == "activewindow"
+        && let Some((class, _title)) = event.data.split_once(',')
+        && !class.is_empty()
+    {
+        return class.to_string();
+    }
+
+    event.name.clone()
 }
 
 /// Starts the event listener in a background thread.
@@ -169,6 +201,7 @@ pub fn start_listener(logger: Arc<Logger>, config: &HyprlandConfig) -> Option<Ev
     let shutdown = Arc::new(AtomicBool::new(false));
     let shutdown_clone = Arc::clone(&shutdown);
     let config = config.clone();
+    let scope = config.scope.clone();
 
     let thread = match thread::Builder::new()
         .name("hyprland-listener".into())
@@ -177,7 +210,10 @@ pub fn start_listener(logger: Arc<Logger>, config: &HyprlandConfig) -> Option<Ev
         }) {
         Ok(handle) => handle,
         Err(e) => {
-            internal::error("HYPRLAND", &format!("Failed to spawn listener thread: {e}"));
+            internal::error(
+                scope.as_str(),
+                &format!("Failed to spawn listener thread: {e}"),
+            );
             return None;
         }
     };

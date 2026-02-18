@@ -18,12 +18,13 @@ use std::time::Duration;
 /// Logs errors directly through hyprlog and returns `None` on failure.
 #[must_use]
 pub fn resolve_socket_dir(config: &HyprlandConfig) -> Option<PathBuf> {
+    let scope = config.scope.as_str();
     if let Some(ref dir) = config.socket_dir {
         let path = PathBuf::from(dir);
         if path.exists() {
             return Some(path);
         }
-        internal::error("HYPRLAND", "Socket directory not found");
+        internal::error(scope, "Socket directory not found");
         return None;
     }
 
@@ -36,12 +37,13 @@ pub fn resolve_socket_dir(config: &HyprlandConfig) -> Option<PathBuf> {
     if socket_dir.exists() {
         Some(socket_dir)
     } else {
-        internal::error("HYPRLAND", "Socket directory not found");
+        internal::error(scope, "Socket directory not found");
         None
     }
 }
 
 fn resolve_instance_signature(config: &HyprlandConfig) -> Option<String> {
+    let scope = config.scope.as_str();
     if let Some(sig) = &config.instance_signature {
         return Some(sig.clone());
     }
@@ -55,7 +57,7 @@ fn resolve_instance_signature(config: &HyprlandConfig) -> Option<String> {
     {
         if instances.len() > 1 {
             internal::warn(
-                "HYPRLAND",
+                scope,
                 &format!(
                     "Multiple Hyprland instances found, using first discovered: {}",
                     first.signature
@@ -66,7 +68,7 @@ fn resolve_instance_signature(config: &HyprlandConfig) -> Option<String> {
     }
 
     internal::error(
-        "HYPRLAND",
+        scope,
         "Could not resolve Hyprland instance signature (set [hyprland].instance_signature)",
     );
     None
