@@ -33,10 +33,23 @@ pub fn expand_path(path: &str) -> PathBuf {
 }
 
 /// Builds a logger from config with optional app name override.
+///
+/// If no override is given, the app name is auto-detected from the binary name.
 #[must_use]
 pub fn build_logger(config: &Config, app_override: Option<&str>) -> Logger {
-    let app_name = app_override.unwrap_or("hyprlog");
-    Logger::from_config_with(config, app_name)
+    let app_name = app_override.map_or_else(detect_binary_name, |s| s.to_string());
+    Logger::from_config_with(config, &app_name)
+}
+
+/// Detects the current binary name from `argv[0]`.
+fn detect_binary_name() -> String {
+    std::env::args()
+        .next()
+        .as_deref()
+        .map(std::path::Path::new)
+        .and_then(std::path::Path::file_name)
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_else(|| "unknown".to_string())
 }
 
 /// Prints the help message.

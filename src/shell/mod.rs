@@ -97,10 +97,13 @@ pub fn run(config: &Config) -> Result<(), String> {
         }
     }
 
-    if let Some(path) = &history_path
-        && rl.save_history(path).is_err()
-    {
-        internal::warn("SHELL", "Could not save history");
+    if let Some(path) = &history_path {
+        if let Some(parent) = path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        if rl.save_history(path).is_err() {
+            internal::warn("SHELL", "Could not save history");
+        }
     }
 
     internal::info("SHELL", "Shell exited");

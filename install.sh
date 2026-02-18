@@ -166,7 +166,7 @@ install_from_source() {
     fi
 
     log "Building release binary..."
-    if ! cargo build --release --bin hyprlog 2>&1; then
+    if ! cargo build --release --features hyprland --bin hyprlog; then
         die "Build failed"
     fi
     success "Build complete"
@@ -179,7 +179,10 @@ install_from_source() {
 
     # Install binary
     local src="target/release/hyprlog"
-    [[ -f "$src" ]] && cp "$src" "$INSTALL_DIR/" || die "Binary not found: $src"
+    if [[ ! -f "$src" ]]; then
+        die "Binary not found: $src"
+    fi
+    cp "$src" "$INSTALL_DIR/" || die "Failed to install binary"
     chmod +x "${INSTALL_DIR}/hyprlog"
 }
 
@@ -187,7 +190,10 @@ install_from_package() {
     local pkg_dir="$1"
 
     local src="${pkg_dir}/bin/hyprlog"
-    [[ -f "$src" ]] && cp "$src" "$INSTALL_DIR/" || die "Binary not found: $src"
+    if [[ ! -f "$src" ]]; then
+        die "Binary not found: $src"
+    fi
+    cp "$src" "$INSTALL_DIR/" || die "Failed to install binary"
     chmod +x "${INSTALL_DIR}/hyprlog"
 }
 
@@ -356,9 +362,10 @@ install_cabi() {
     success "Installed header: ${header_dest}/hyprlog.h"
 
     # ldconfig hint
-    if [[ ":$LD_LIBRARY_PATH:" != *":$LIB_DIR:"* ]]; then
+    if [[ ":${LD_LIBRARY_PATH:-}:" != *":$LIB_DIR:"* ]]; then
         warn "$LIB_DIR not in LD_LIBRARY_PATH"
-        echo "  Add to shell config: export LD_LIBRARY_PATH=\"\$HOME/.local/lib:\$LD_LIBRARY_PATH\""
+        echo "  Add to your shell config:"
+        echo "    export LD_LIBRARY_PATH=\"\$HOME/.local/lib:\${LD_LIBRARY_PATH:-}\""
         echo "  Or run: sudo ldconfig $LIB_DIR"
     fi
 }
@@ -407,9 +414,10 @@ main() {
     fi
 
     # PATH check
-    if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
+    if [[ ":${PATH:-}:" != *":$INSTALL_DIR:"* ]]; then
         warn "$INSTALL_DIR not in PATH"
-        echo "  Add to config.fish: set -Ua fish_user_paths \$HOME/.local/bin/hypr"
+        echo "  Add to your shell config:"
+        echo "    export PATH=\"\$HOME/.local/bin/hypr:\$PATH\""
     fi
 
     # Show installed version
