@@ -2,6 +2,7 @@
 
 use crate::config::HyprlandConfig;
 use crate::internal;
+use hypr_sdk::ipc::instance;
 use std::io::BufReader;
 use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
@@ -11,7 +12,8 @@ use std::time::Duration;
 ///
 /// Priority:
 /// 1. `config.socket_dir` (explicit override)
-/// 2. `$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/`
+/// 2. `config.instance_signature`
+/// 3. `hypr-sdk` current instance / discovery fallback
 ///
 /// Logs errors directly through hyprlog and returns `None` on failure.
 #[must_use]
@@ -25,24 +27,11 @@ pub fn resolve_socket_dir(config: &HyprlandConfig) -> Option<PathBuf> {
         return None;
     }
 
-    let instance_sig = if let Some(ref sig) = config.instance_signature {
-        sig.clone()
-    } else if let Ok(sig) = std::env::var("HYPRLAND_INSTANCE_SIGNATURE") {
-        sig
-    } else {
-        internal::error(
-            "HYPRLAND",
-            "HYPRLAND_INSTANCE_SIGNATURE not set (is Hyprland running?)",
-        );
+    let Some(instance_sig) = resolve_instance_signature(config) else {
         return None;
     };
 
-    let Ok(runtime_dir) = std::env::var("XDG_RUNTIME_DIR") else {
-        internal::error("HYPRLAND", "XDG_RUNTIME_DIR not set");
-        return None;
-    };
-
-    let socket_dir = PathBuf::from(runtime_dir).join("hypr").join(instance_sig);
+    let socket_dir = PathBuf::from(instance::runtime_dir()).join(instance_sig);
 
     if socket_dir.exists() {
         Some(socket_dir)
@@ -50,6 +39,37 @@ pub fn resolve_socket_dir(config: &HyprlandConfig) -> Option<PathBuf> {
         internal::error("HYPRLAND", "Socket directory not found");
         None
     }
+}
+
+fn resolve_instance_signature(config: &HyprlandConfig) -> Option<String> {
+    if let Some(sig) = &config.instance_signature {
+        return Some(sig.clone());
+    }
+
+    if let Ok(current) = instance::current_instance() {
+        return Some(current.signature);
+    }
+
+    if let Ok(instances) = instance::discover_instances()
+        && let Some(first) = instances.first()
+    {
+        if instances.len() > 1 {
+            internal::warn(
+                "HYPRLAND",
+                &format!(
+                    "Multiple Hyprland instances found, using first discovered: {}",
+                    first.signature
+                ),
+            );
+        }
+        return Some(first.signature.clone());
+    }
+
+    internal::error(
+        "HYPRLAND",
+        "Could not resolve Hyprland instance signature (set [hyprland].instance_signature)",
+    );
+    None
 }
 
 /// Returns the path to socket2 (event socket).

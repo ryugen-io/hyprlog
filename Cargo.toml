@@ -11,7 +11,7 @@ repository = "https://github.com/ryugen-io/hyprlog"
 default = ["cli"]
 cli = ["dep:clap", "dep:rustyline"]
 ffi = []
-hyprland = []
+hyprland = ["dep:hypr-sdk"]
 
 [lib]
 name = "hyprlog"
@@ -41,6 +41,8 @@ serde_json = "1"
 shellexpand = "3"
 toml = "0.8"
 ulid = "1"
+# hypr-sdk = { git = "ssh://git@github.com/ryugen-io/hypr-sdk.git", branch = "main", default-features = false, optional = true }
+hypr-sdk = { path = "../../hlrsgw", optional = true }
 
 # CLI (optional)
 clap = { version = "4", features = ["derive"], optional = true }
