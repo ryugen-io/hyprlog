@@ -170,25 +170,52 @@ fn resolve_event_scope(config: &HyprlandConfig, event: &HyprlandEvent) -> String
         return scope.clone();
     }
 
-    if event.name == "custom" {
-        return "hyprctl".to_string();
-    }
+    let derived = match event.name.as_str() {
+        "custom" => Some("hyprctl"),
 
-    if event.name == "openwindow"
-        && let Some(class) = event.data.splitn(4, ',').nth(2)
-        && !class.is_empty()
-    {
-        return class.to_string();
-    }
+        // App-oriented events: use class where available.
+        "openwindow" => nth_csv_field(&event.data, 2),
+        "activewindow" => first_csv_field(&event.data),
 
-    if event.name == "activewindow"
-        && let Some((class, _title)) = event.data.split_once(',')
-        && !class.is_empty()
-    {
-        return class.to_string();
-    }
+        // Monitor/workspace/layer/input domains.
+        "focusedmon" | "focusedmonv2" | "monitoradded" | "monitorremoved" => {
+            first_csv_field(&event.data)
+        }
+        "monitoraddedv2" | "monitorremovedv2" => nth_csv_field(&event.data, 1),
+        "workspace" | "createworkspace" | "destroyworkspace" | "submap" | "openlayer"
+        | "closelayer" => Some(event.data.as_str()),
+        "workspacev2" | "createworkspacev2" | "destroyworkspacev2" | "moveworkspacev2" => {
+            nth_csv_field(&event.data, 1)
+        }
+        "renameworkspace" => nth_csv_field(&event.data, 1),
+        "moveworkspace" => first_csv_field(&event.data),
+        "activelayout" => first_csv_field(&event.data),
 
-    event.name.clone()
+        // Window-address events: use window address when class is unavailable.
+        "activewindowv2" | "closewindow" | "windowtitle" | "urgent" | "moveintogroup"
+        | "moveoutofgroup" => first_csv_field(&event.data),
+        "windowtitlev2" | "movewindow" | "movewindowv2" | "changefloatingmode" | "minimized"
+        | "pin" => first_csv_field(&event.data),
+        "togglegroup" => nth_csv_field(&event.data, 1),
+
+        // Misc.
+        "screencast" => nth_csv_field(&event.data, 1),
+
+        _ => None,
+    };
+
+    derived
+        .filter(|s| !s.is_empty())
+        .map(ToString::to_string)
+        .unwrap_or_else(|| config.scope.clone())
+}
+
+fn first_csv_field(data: &str) -> Option<&str> {
+    data.split(',').next()
+}
+
+fn nth_csv_field(data: &str, n: usize) -> Option<&str> {
+    data.split(',').nth(n)
 }
 
 /// Starts the event listener in a background thread.
