@@ -116,20 +116,14 @@ fn format_focusedmonv2() {
 fn format_movewindowv2() {
     let fmt = EventFormatter::new();
     let event = HyprlandEvent::parse("movewindowv2>>80a6f50,2,2").unwrap();
-    assert_eq!(
-        fmt.format(&event),
-        "window moved (movewindowv2): ws=2"
-    );
+    assert_eq!(fmt.format(&event), "window moved (movewindowv2): ws=2");
 }
 
 #[test]
 fn format_movewindow() {
     let fmt = EventFormatter::new();
     let event = HyprlandEvent::parse("movewindow>>80a6f50,2").unwrap();
-    assert_eq!(
-        fmt.format(&event),
-        "window moved (movewindow): ws=2"
-    );
+    assert_eq!(fmt.format(&event), "window moved (movewindow): ws=2");
 }
 
 #[test]
@@ -177,4 +171,21 @@ fn format_windowtitle_without_cache() {
     let fmt = EventFormatter::new();
     let event = HyprlandEvent::parse("windowtitle>>80a6f50").unwrap();
     assert_eq!(fmt.format(&event), "title changed (windowtitle): 80a6f50");
+}
+
+#[test]
+fn format_then_observe_order_for_closewindow() {
+    let mut fmt = EventFormatter::new();
+    let open = HyprlandEvent::parse("openwindow>>80a6f50,2,rio,rio").unwrap();
+    fmt.observe(&open);
+
+    let close = HyprlandEvent::parse("closewindow>>80a6f50").unwrap();
+    // The listener should format BEFORE observe, so the cache entry is still there.
+    let msg = fmt.format(&close);
+    assert_eq!(msg, "window closed (closewindow): app=rio");
+    fmt.observe(&close); // now remove from cache
+
+    // After observe, cache is cleared
+    let msg2 = fmt.format(&close);
+    assert_eq!(msg2, "window closed (closewindow): 80a6f50");
 }

@@ -116,7 +116,7 @@ impl EventFormatter {
         let app = self
             .window_cache
             .get(addr.trim())
-            .map_or_else(|| class.trim(), String::as_str);
+            .map_or_else(|| class.trim().to_ascii_lowercase(), String::clone);
         format!(r#"app={app} title="{title}" ws={ws}"#)
     }
 

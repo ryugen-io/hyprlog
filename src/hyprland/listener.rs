@@ -1,6 +1,7 @@
 //! Hyprland socket2 event listener.
 
 use super::event::HyprlandEvent;
+use super::formatter::EventFormatter;
 use super::level_map::resolve_level;
 use super::socket;
 use crate::config::HyprlandConfig;
@@ -126,6 +127,7 @@ async fn process_events(
     shutdown: &AtomicBool,
 ) {
     let scope = config.scope.as_str();
+    let mut formatter = EventFormatter::new();
     loop {
         if shutdown.load(Ordering::Relaxed) {
             break;
@@ -141,15 +143,17 @@ async fn process_events(
                 }
 
                 // If an allowlist filter is set, skip events not in it
-                if let Some(ref filter) = config.event_filter {
-                    if !filter.iter().any(|f| f == &event.name) {
-                        continue;
-                    }
+                if let Some(ref filter) = config.event_filter
+                    && !filter.iter().any(|f| f == &event.name)
+                {
+                    continue;
                 }
 
                 let level = resolve_level(&event.name, &config.event_levels);
                 let scope = resolve_event_scope(config, &event);
-                logger.log(level, &scope, &event.format_message());
+                let msg = formatter.format(&event);
+                formatter.observe(&event);
+                logger.log(level, &scope, &msg);
             }
             Ok(Ok(None)) => break, // EOF — socket closed
             Ok(Err(e)) => {
@@ -170,48 +174,69 @@ fn resolve_event_scope(config: &HyprlandConfig, event: &HyprlandEvent) -> String
         return scope.clone();
     }
 
-    let derived = match event.name.as_str() {
-        "custom" => Some("hyprctl"),
+    if event.name == "custom" {
+        return "hyprctl".to_string();
+    }
 
-        // App-oriented events: use class where available.
-        "openwindow" => nth_csv_field(&event.data, 2),
-        "activewindow" => first_csv_field(&event.data),
+    if let Some(scope) = extract_app_scope(event) {
+        return scope;
+    }
 
-        // Monitor/workspace/layer/input domains.
-        "focusedmon" | "focusedmonv2" | "monitoradded" | "monitorremoved" => {
-            first_csv_field(&event.data)
-        }
-        "monitoraddedv2" | "monitorremovedv2" => nth_csv_field(&event.data, 1),
-        "workspace" | "createworkspace" | "destroyworkspace" | "submap" | "openlayer"
-        | "closelayer" => Some(event.data.as_str()),
-        "workspacev2" | "createworkspacev2" | "destroyworkspacev2" | "moveworkspacev2" => {
-            nth_csv_field(&event.data, 1)
-        }
-        "renameworkspace" => nth_csv_field(&event.data, 1),
-        "moveworkspace" => first_csv_field(&event.data),
-        "activelayout" => first_csv_field(&event.data),
+    if let Some(scope) = find_hypr_app_token(&event.data) {
+        return scope;
+    }
 
-        // Window-address events: use window address when class is unavailable.
-        "activewindowv2" | "closewindow" | "windowtitle" | "urgent" | "moveintogroup"
-        | "moveoutofgroup" => first_csv_field(&event.data),
-        "windowtitlev2" | "movewindow" | "movewindowv2" | "changefloatingmode" | "minimized"
-        | "pin" => first_csv_field(&event.data),
-        "togglegroup" => nth_csv_field(&event.data, 1),
-
-        // Misc.
-        "screencast" => nth_csv_field(&event.data, 1),
-
-        _ => None,
-    };
-
-    derived
-        .filter(|s| !s.is_empty())
-        .map(ToString::to_string)
-        .unwrap_or_else(|| config.scope.clone())
+    "hyprland".to_string()
 }
 
-fn first_csv_field(data: &str) -> Option<&str> {
-    data.split(',').next()
+fn extract_app_scope(event: &HyprlandEvent) -> Option<String> {
+    let candidate = match event.name.as_str() {
+        "openwindow" => nth_csv_field(&event.data, 2),
+        "activewindow" => nth_csv_field(&event.data, 0),
+        _ => None,
+    }?;
+
+    normalize_scope_candidate(candidate)
+}
+
+fn normalize_scope_candidate(candidate: &str) -> Option<String> {
+    let trimmed = candidate.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    if is_monitor_name(trimmed) {
+        return None;
+    }
+
+    if trimmed.chars().all(|c| c.is_ascii_digit()) {
+        return None;
+    }
+
+    if trimmed.len() >= 6 && trimmed.chars().all(|c| c.is_ascii_hexdigit()) {
+        return None;
+    }
+
+    Some(trimmed.to_ascii_lowercase())
+}
+
+fn is_monitor_name(token: &str) -> bool {
+    let upper = token.to_ascii_uppercase();
+    upper.starts_with("DP-")
+        || upper.starts_with("EDP-")
+        || upper.starts_with("HDMI-")
+        || upper.starts_with("DVI-")
+        || upper.starts_with("VGA-")
+        || upper.starts_with("WL-")
+        || upper.starts_with("HEADLESS-")
+}
+
+fn find_hypr_app_token(data: &str) -> Option<String> {
+    data.split(|c: char| !(c.is_ascii_alphanumeric() || c == '-' || c == '_'))
+        .filter(|token| !token.is_empty())
+        .find_map(|token| {
+            normalize_scope_candidate(token).filter(|scope| scope.starts_with("hypr"))
+        })
 }
 
 fn nth_csv_field(data: &str, n: usize) -> Option<&str> {
