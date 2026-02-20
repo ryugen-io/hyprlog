@@ -497,6 +497,7 @@ dependencies = [
 [[package]]
 name = "hypr-sdk"
 version = "0.1.0"
+source = "git+https://github.com/ryugen-io/hypr-sdk.git?branch=main#0a41fec78cdc7f9eb8f81ca85cade98ec47abbde"
 dependencies = [
  "serde",
  "serde_json",

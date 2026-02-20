@@ -41,8 +41,7 @@ serde_json = "1"
 shellexpand = "3"
 toml = "0.8"
 ulid = "1"
-# hypr-sdk = { git = "ssh://git@github.com/ryugen-io/hypr-sdk.git", branch = "main", default-features = false, optional = true }
-hypr-sdk = { path = "../../hlrsgw", optional = true }
+hypr-sdk = { git = "https://github.com/ryugen-io/hypr-sdk.git", branch = "main", default-features = false, optional = true }
 tokio = { version = "1", features = ["rt", "time"], optional = true }
 
 # CLI (optional)
@@ -67,3 +66,8 @@ harness = false
 [[bench]]
 name = "output"
 harness = false
+
+[[bench]]
+name = "hyprland"
+harness = false
+required-features = ["hyprland"]

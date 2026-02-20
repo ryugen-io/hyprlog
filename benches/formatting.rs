@@ -56,8 +56,10 @@ fn bench_style_render(c: &mut Criterion) {
 }
 
 fn bench_highlight_inject_tags(c: &mut Criterion) {
-    let mut config = HighlightConfig::default();
-    config.enabled = true;
+    let mut config = HighlightConfig {
+        enabled: true,
+        ..HighlightConfig::default()
+    };
     config.patterns.urls = Some("cyan".to_string());
     config.patterns.paths = Some("green".to_string());
     config.patterns.numbers = Some("yellow".to_string());

@@ -25,9 +25,7 @@ pub fn resolve_socket_dir(config: &HyprlandConfig) -> Option<PathBuf> {
         return None;
     }
 
-    let Some(instance_sig) = resolve_instance_signature(config) else {
-        return None;
-    };
+    let instance_sig = resolve_instance_signature(config)?;
 
     let socket_dir = PathBuf::from(instance::runtime_dir()).join(instance_sig);
 

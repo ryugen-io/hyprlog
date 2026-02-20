@@ -66,10 +66,10 @@ pub fn resolve_level<S: ::std::hash::BuildHasher>(
     user_overrides: &HashMap<String, String, S>,
 ) -> Level {
     // Check user overrides first
-    if let Some(level_str) = user_overrides.get(event_name) {
-        if let Ok(level) = level_str.parse() {
-            return level;
-        }
+    if let Some(level_str) = user_overrides.get(event_name)
+        && let Ok(level) = level_str.parse()
+    {
+        return level;
     }
 
     // Check default map (cached)

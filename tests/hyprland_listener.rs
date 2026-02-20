@@ -101,6 +101,7 @@ fn run_event_loop_logs_events_and_applies_allowlist_filter_with_app_scope() {
         captured[0].message,
         r#"window opened (openwindow): app=kitty title="Kitty" ws=2"#
     );
+    drop(captured);
 }
 
 #[test]
@@ -151,6 +152,7 @@ fn run_event_loop_custom_events_use_hyprctl_scope() {
     assert_eq!(captured.len(), 1);
     assert_eq!(captured[0].scope, "hyprctl");
     assert_eq!(captured[0].message, "custom: from_hyprctl");
+    drop(captured);
 }
 
 #[test]
@@ -203,6 +205,7 @@ fn run_event_loop_applies_event_scope_overrides() {
     let captured = records.lock().expect("records lock poisoned");
     assert_eq!(captured.len(), 1);
     assert_eq!(captured[0].scope, "window.app");
+    drop(captured);
 }
 
 #[test]
@@ -256,6 +259,7 @@ fn run_event_loop_hypr_app_tokens_use_app_scope() {
         captured[0].message,
         r#"window opened (openwindow): app=hyprlock title="Hyprlock" ws=2"#
     );
+    drop(captured);
 }
 
 #[test]
@@ -309,6 +313,7 @@ fn run_event_loop_monitor_events_use_hyprland_scope_when_no_app_name() {
         captured[0].message,
         "monitor focus (focusedmonv2): monitor=DP-2 id=2"
     );
+    drop(captured);
 }
 
 #[test]
@@ -361,4 +366,5 @@ fn run_event_loop_closewindow_shows_cached_app_name() {
         captured[1].message,
         "window closed (closewindow): app=kitty"
     );
+    drop(captured);
 }

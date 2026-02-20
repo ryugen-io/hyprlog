@@ -143,47 +143,47 @@ impl EventFormatter {
         match event.name.as_str() {
             // Window lifecycle
             "openwindow" => self.format_openwindow(&event.data),
-            "closewindow" | "urgent" | "windowtitle" => self.format_address_only(&event.data),
+            "closewindow" | "urgent" | "windowtitle" | "activewindowv2" | "moveintogroup"
+            | "moveoutofgroup" | "bell" => self.format_address_only(&event.data),
             "windowtitlev2" => Self::format_addr_comma_value(&event.data, "title"),
             "activewindow" => Self::format_activewindow(&event.data),
-            "activewindowv2" => self.format_address_only(&event.data),
             "movewindow" => Self::format_addr_comma_value(&event.data, "ws"),
             "movewindowv2" => Self::format_movewindowv2(&event.data),
 
             // Window state
-            "fullscreen" => Self::format_bool(&event.data, "enabled"),
+            "fullscreen" | "lockgroups" | "ignoregrouplock" => {
+                Self::format_bool(&event.data, "enabled")
+            }
             "changefloatingmode" => self.format_addr_bool(&event.data, "tiled"),
             "minimized" => self.format_addr_bool(&event.data, "minimized"),
             "pin" => self.format_addr_bool(&event.data, "pinned"),
 
-            // Workspace (name only)
-            "workspace" | "createworkspace" | "destroyworkspace" => {
+            // Workspace (name only) / monitor (name only)
+            "workspace" | "createworkspace" | "destroyworkspace" | "monitoradded"
+            | "monitorremoved" => {
                 format!("name={}", event.data)
             }
             // Workspace v2 (id,name)
             "workspacev2" | "createworkspacev2" | "destroyworkspacev2" => {
                 Self::format_id_name(&event.data)
             }
-            "moveworkspace" => Self::format_csv_kv(&event.data, &["name", "monitor"]),
-            "moveworkspacev2" => Self::format_csv_kv(&event.data, &["id", "name", "monitor"]),
+            "moveworkspace" | "activespecial" => {
+                Self::format_csv_kv(&event.data, &["name", "monitor"])
+            }
+            "moveworkspacev2" | "activespecialv2" => {
+                Self::format_csv_kv(&event.data, &["id", "name", "monitor"])
+            }
             "renameworkspace" => Self::format_csv_kv(&event.data, &["id", "name"]),
-
-            // Special workspace
-            "activespecial" => Self::format_csv_kv(&event.data, &["name", "monitor"]),
-            "activespecialv2" => Self::format_csv_kv(&event.data, &["id", "name", "monitor"]),
 
             // Monitor
             "focusedmon" => Self::format_csv_kv(&event.data, &["monitor", "workspace"]),
             "focusedmonv2" => Self::format_csv_kv(&event.data, &["monitor", "id"]),
-            "monitoradded" | "monitorremoved" => format!("name={}", event.data),
             "monitoraddedv2" | "monitorremovedv2" => {
                 Self::format_csv_kv(&event.data, &["id", "name", "description"])
             }
 
             // Groups
             "togglegroup" => Self::format_togglegroup(&event.data),
-            "lockgroups" | "ignoregrouplock" => Self::format_bool(&event.data, "enabled"),
-            "moveintogroup" | "moveoutofgroup" => self.format_address_only(&event.data),
 
             // Layers
             "openlayer" | "closelayer" => format!("namespace={}", event.data),
@@ -193,7 +193,6 @@ impl EventFormatter {
 
             // Misc
             "screencast" => Self::format_screencast(&event.data),
-            "bell" => self.format_address_only(&event.data),
 
             _ => event.data.clone(),
         }
@@ -292,24 +291,21 @@ impl EventFormatter {
 
     /// Formats `0|1,addr1,addr2,...` as `state={opened|closed} windows=N`.
     fn format_togglegroup(data: &str) -> String {
-        match data.split_once(',') {
-            Some((flag, rest)) => {
-                let state = if flag.trim() == "1" {
-                    "opened"
-                } else {
-                    "closed"
-                };
-                let count = rest.split(',').count();
-                format!("state={state} windows={count}")
-            }
-            None => {
-                let state = if data.trim() == "1" {
-                    "opened"
-                } else {
-                    "closed"
-                };
-                format!("state={state}")
-            }
+        if let Some((flag, rest)) = data.split_once(',') {
+            let state = if flag.trim() == "1" {
+                "opened"
+            } else {
+                "closed"
+            };
+            let count = rest.split(',').count();
+            format!("state={state} windows={count}")
+        } else {
+            let state = if data.trim() == "1" {
+                "opened"
+            } else {
+                "closed"
+            };
+            format!("state={state}")
         }
     }
 

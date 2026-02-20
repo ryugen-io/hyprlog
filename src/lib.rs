@@ -77,7 +77,7 @@ pub use cli::PresetRunner;
 
 // Hyprland re-exports
 #[cfg(feature = "hyprland")]
-pub use hyprland::{EventListenerHandle, HyprlandEvent};
+pub use hyprland::{EventFormatter, EventListenerHandle, HyprlandEvent};
 
 // FFI re-exports
 #[cfg(feature = "ffi")]

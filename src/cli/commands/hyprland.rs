@@ -79,33 +79,33 @@ pub fn cmd_watch(args: &[&str], config: &Config, logger: &Logger) -> ExitCode {
     let mut hyprland_config = config.hyprland.clone();
 
     // Parse --events filter (comma-separated allowlist)
-    if let Some(idx) = args.iter().position(|&a| a == "--events") {
-        if let Some(&filter) = args.get(idx + 1) {
-            let allowed: Vec<String> = filter.split(',').map(|s| s.trim().to_string()).collect();
-            hyprland_config.event_filter = Some(allowed);
-        }
+    if let Some(idx) = args.iter().position(|&a| a == "--events")
+        && let Some(&filter) = args.get(idx + 1)
+    {
+        let allowed: Vec<String> = filter.split(',').map(|s| s.trim().to_string()).collect();
+        hyprland_config.event_filter = Some(allowed);
     }
 
     // Parse --min-level filter
-    if let Some(idx) = args.iter().position(|&a| a == "--min-level") {
-        if let Some(&level_str) = args.get(idx + 1) {
-            if let Ok(min_level) = level_str.parse::<Level>() {
-                // Add events below this level to the ignore list
-                let defaults = crate::hyprland::level_map::default_level_map();
-                for (&event_name, &default_level) in &defaults {
-                    if default_level < min_level
-                        && !hyprland_config.event_levels.contains_key(event_name)
-                    {
-                        hyprland_config.ignore_events.push(event_name.to_string());
-                    }
+    if let Some(idx) = args.iter().position(|&a| a == "--min-level")
+        && let Some(&level_str) = args.get(idx + 1)
+    {
+        if let Ok(min_level) = level_str.parse::<Level>() {
+            // Add events below this level to the ignore list
+            let defaults = crate::hyprland::level_map::default_level_map();
+            for (&event_name, &default_level) in &defaults {
+                if default_level < min_level
+                    && !hyprland_config.event_levels.contains_key(event_name)
+                {
+                    hyprland_config.ignore_events.push(event_name.to_string());
                 }
-            } else {
-                internal::error(
-                    hyprland_config.scope.as_str(),
-                    &format!("Invalid level: {level_str}"),
-                );
-                return ExitCode::FAILURE;
             }
+        } else {
+            internal::error(
+                hyprland_config.scope.as_str(),
+                &format!("Invalid level: {level_str}"),
+            );
+            return ExitCode::FAILURE;
         }
     }
 
