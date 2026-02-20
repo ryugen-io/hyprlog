@@ -290,6 +290,9 @@ pub struct HyprlandConfig {
     pub scope: String,
     /// Per-event scope overrides (event name -> scope string).
     pub event_scopes: HashMap<String, String>,
+    /// Use human-readable event formatting (default: true).
+    /// When false, events are logged with raw Hyprland wire format.
+    pub human_readable: bool,
     /// Runtime-only allowlist filter (not deserialized from config).
     /// When set, only events in this list are processed.
     #[serde(skip)]
@@ -304,8 +307,9 @@ impl Default for HyprlandConfig {
             socket_dir: None,
             event_levels: HashMap::new(),
             ignore_events: Vec::new(),
-            scope: "HYPR".to_string(),
+            scope: "hyprland".to_string(),
             event_scopes: HashMap::new(),
+            human_readable: true,
             event_filter: None,
         }
     }

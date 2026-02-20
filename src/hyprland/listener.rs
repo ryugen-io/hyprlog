@@ -127,7 +127,7 @@ async fn process_events(
     shutdown: &AtomicBool,
 ) {
     let scope = config.scope.as_str();
-    let mut formatter = EventFormatter::new();
+    let mut formatter = EventFormatter::new(config.human_readable);
     loop {
         if shutdown.load(Ordering::Relaxed) {
             break;
