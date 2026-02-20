@@ -93,9 +93,31 @@ impl EventFormatter {
 
     fn format_data(&self, event: &HyprlandEvent) -> String {
         match event.name.as_str() {
-            "urgent" => self.format_address_only(&event.data),
+            "openwindow" => self.format_openwindow(&event.data),
+            "closewindow" | "urgent" | "windowtitle" => self.format_address_only(&event.data),
+            "windowtitlev2" => Self::format_windowtitlev2(&event.data),
+            "focusedmonv2" => Self::format_focusedmonv2(&event.data),
+            "movewindowv2" => Self::format_movewindowv2(&event.data),
+            "movewindow" => Self::format_movewindow(&event.data),
+            "activewindow" => Self::format_activewindow(&event.data),
+            "workspace" | "createworkspace" | "destroyworkspace" => {
+                format!("name={}", event.data)
+            }
             _ => event.data.clone(),
         }
+    }
+
+    fn format_openwindow(&self, data: &str) -> String {
+        let mut fields = data.splitn(4, ',');
+        let addr = fields.next().unwrap_or("");
+        let ws = fields.next().unwrap_or("");
+        let class = fields.next().unwrap_or("");
+        let title = fields.next().unwrap_or("");
+        let app = self
+            .window_cache
+            .get(addr.trim())
+            .map_or_else(|| class.trim(), String::as_str);
+        format!(r#"app={app} title="{title}" ws={ws}"#)
     }
 
     fn format_address_only(&self, data: &str) -> String {
@@ -103,6 +125,43 @@ impl EventFormatter {
         self.window_cache
             .get(addr)
             .map_or_else(|| addr.to_string(), |app| format!("app={app}"))
+    }
+
+    fn format_windowtitlev2(data: &str) -> String {
+        match data.split_once(',') {
+            Some((_addr, title)) => format!(r#"title="{title}""#),
+            None => data.to_string(),
+        }
+    }
+
+    fn format_focusedmonv2(data: &str) -> String {
+        match data.split_once(',') {
+            Some((name, id)) => format!("monitor={name} id={id}"),
+            None => data.to_string(),
+        }
+    }
+
+    fn format_movewindowv2(data: &str) -> String {
+        let mut fields = data.splitn(3, ',');
+        let _addr = fields.next();
+        let _ws_id = fields.next();
+        fields
+            .next()
+            .map_or_else(|| data.to_string(), |ws_name| format!("ws={ws_name}"))
+    }
+
+    fn format_movewindow(data: &str) -> String {
+        match data.split_once(',') {
+            Some((_addr, ws)) => format!("ws={ws}"),
+            None => data.to_string(),
+        }
+    }
+
+    fn format_activewindow(data: &str) -> String {
+        match data.split_once(',') {
+            Some((class, title)) => format!(r#"app={class} title="{title}""#),
+            None => data.to_string(),
+        }
     }
 }
 
