@@ -1,12 +1,9 @@
-//! Hyprland Unix socket path resolution and event stream connection.
+//! Hyprland Unix socket path resolution.
 
 use crate::config::HyprlandConfig;
 use crate::internal;
 use hypr_sdk::ipc::instance;
-use std::io::BufReader;
-use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
-use std::time::Duration;
 
 /// Resolves the Hyprland socket directory.
 ///
@@ -78,29 +75,4 @@ fn resolve_instance_signature(config: &HyprlandConfig) -> Option<String> {
 #[must_use]
 pub fn socket2_path(socket_dir: &Path) -> PathBuf {
     socket_dir.join(".socket2.sock")
-}
-
-/// Connects to the Hyprland event stream (socket2).
-///
-/// Logs errors directly through hyprlog and returns `None` on failure.
-#[must_use]
-pub fn connect_event_stream(socket_dir: &Path) -> Option<BufReader<UnixStream>> {
-    let path = socket2_path(socket_dir);
-    let stream = match UnixStream::connect(&path) {
-        Ok(s) => s,
-        Err(e) => {
-            internal::error(
-                "HYPRLAND",
-                &format!("Failed to connect to event socket: {e}"),
-            );
-            return None;
-        }
-    };
-
-    if let Err(e) = stream.set_read_timeout(Some(Duration::from_secs(1))) {
-        internal::error("HYPRLAND", &format!("Failed to set socket timeout: {e}"));
-        return None;
-    }
-
-    Some(BufReader::new(stream))
 }
