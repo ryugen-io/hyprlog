@@ -34,8 +34,6 @@ static NAME_MAP: LazyLock<HashMap<&'static str, &'static str>> = LazyLock::new(|
 ///
 /// Maintains a window-address cache to resolve hex addresses to app names.
 pub struct EventFormatter {
-    // Used in Task 2 for window address resolution.
-    #[allow(dead_code)]
     window_cache: HashMap<String, String>,
 }
 
@@ -51,9 +49,30 @@ impl EventFormatter {
     /// Updates internal caches based on the event.
     ///
     /// Call this before `format()` for every event to keep the window cache current.
-    #[allow(clippy::missing_const_for_fn)]
-    pub fn observe(&mut self, _event: &HyprlandEvent) {
-        // Window cache logic added in Task 2.
+    pub fn observe(&mut self, event: &HyprlandEvent) {
+        match event.name.as_str() {
+            "openwindow" => {
+                // Format: addr,ws,class,title
+                let mut fields = event.data.splitn(4, ',');
+                if let (Some(addr), Some(_ws), Some(class)) =
+                    (fields.next(), fields.next(), fields.next())
+                {
+                    let addr = addr.trim();
+                    let class = class.trim();
+                    if !addr.is_empty() && !class.is_empty() {
+                        self.window_cache
+                            .insert(addr.to_string(), class.to_ascii_lowercase());
+                    }
+                }
+            }
+            "closewindow" => {
+                let addr = event.data.trim();
+                if !addr.is_empty() {
+                    self.window_cache.remove(addr);
+                }
+            }
+            _ => {}
+        }
     }
 
     /// Formats an event as a human-readable log message.
@@ -61,12 +80,29 @@ impl EventFormatter {
     pub fn format(&self, event: &HyprlandEvent) -> String {
         let human = NAME_MAP.get(event.name.as_str());
 
-        match (human, event.data.is_empty()) {
-            (Some(label), true) => (*label).to_string(),
-            (Some(label), false) => format!("{label} ({}): {}", event.name, event.data),
-            (None, true) => event.name.clone(),
-            (None, false) => format!("{}: {}", event.name, event.data),
+        if event.data.is_empty() {
+            return human.map_or_else(|| event.name.clone(), |label| (*label).to_string());
         }
+
+        let formatted_data = self.format_data(event);
+        human.map_or_else(
+            || format!("{}: {formatted_data}", event.name),
+            |label| format!("{label} ({}): {formatted_data}", event.name),
+        )
+    }
+
+    fn format_data(&self, event: &HyprlandEvent) -> String {
+        match event.name.as_str() {
+            "urgent" => self.format_address_only(&event.data),
+            _ => event.data.clone(),
+        }
+    }
+
+    fn format_address_only(&self, data: &str) -> String {
+        let addr = data.trim();
+        self.window_cache
+            .get(addr)
+            .map_or_else(|| addr.to_string(), |app| format!("app={app}"))
     }
 }
 
