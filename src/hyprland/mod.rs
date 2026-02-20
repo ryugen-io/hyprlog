@@ -4,9 +4,11 @@
 //! and routes them through the logger.
 
 pub mod event;
+pub mod formatter;
 pub mod level_map;
 pub mod listener;
 pub mod socket;
 
 pub use event::HyprlandEvent;
+pub use formatter::EventFormatter;
 pub use listener::EventListenerHandle;
