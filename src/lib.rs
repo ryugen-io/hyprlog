@@ -1,15 +1,19 @@
-// Forbid unsafe code except when ffi or hyprland features are enabled
+// Default to forbidding unsafe — only the ffi and hyprland modules legitimately need it for C-ABI and raw socket operations
 #![cfg_attr(not(any(feature = "ffi", feature = "hyprland")), forbid(unsafe_code))]
 
-//! `hyprlog` - Flexible logging library for Hyprland and beyond.
+//! `hyprlog` exists because Hyprland's ecosystem lacked a shared, structured
+//! logging library — each tool rolled its own ad-hoc solution. This crate
+//! provides a single, configurable logging layer that any Hypr project (or
+//! external tool) can adopt, ensuring consistent log format, filtering, and
+//! output across the ecosystem.
 //!
-//! A configurable logging library with support for:
-//! - Multiple output backends (terminal, file, JSON database)
-//! - Customizable formatting templates
-//! - Inline message styling with XML-like tags
-//! - Builder pattern for programmatic configuration
-//! - Interactive shell mode
-//! - C-ABI FFI bindings
+//! Key design choices:
+//! - Multiple output backends (terminal, file, JSON) so one logger serves dev, production, and tooling needs
+//! - Customizable formatting templates to match Hyprland's existing log aesthetic
+//! - Inline XML-like styling tags (`<bold>`, `<red>`) to avoid a separate markup dependency
+//! - Builder pattern for ergonomic programmatic setup without TOML config files
+//! - Interactive shell mode for ad-hoc log exploration and debugging sessions
+//! - C-ABI FFI bindings so C/C++ Hyprland plugins can log through the same pipeline
 //!
 //! # Example
 //!
@@ -34,7 +38,7 @@
 //! - `cli` (default): Enables command-line interface and interactive shell
 //! - `ffi`: Enables C-ABI FFI bindings
 
-// Core modules (always available)
+// Always compiled regardless of feature flags — these form the minimum viable logger
 pub mod cleanup;
 pub mod config;
 pub mod error;
@@ -44,23 +48,23 @@ pub mod level;
 pub mod logger;
 pub mod output;
 
-// CLI module (feature-gated)
+// Gated behind `cli` because library consumers typically don't need clap/rustyline dependencies
 #[cfg(feature = "cli")]
 pub mod cli;
 
-// Shell module (feature-gated)
+// Interactive REPL shares the `cli` gate since it depends on rustyline and the CLI command set
 #[cfg(feature = "cli")]
 pub mod shell;
 
-// Hyprland IPC module (feature-gated)
+// Hyprland socket integration is optional — avoids pulling in Unix socket deps for non-Hyprland users
 #[cfg(feature = "hyprland")]
 pub mod hyprland;
 
-// FFI module (feature-gated)
+// FFI requires unsafe and cbindgen — gated so pure-Rust consumers avoid that surface area
 #[cfg(feature = "ffi")]
 pub mod ffi;
 
-// Re-exports for convenience
+// Flatten the most-used types to the crate root so callers can `use hyprlog::Logger` instead of `use hyprlog::logger::Logger`
 pub use cleanup::{
     CleanupOptions, CleanupResult, LogFileInfo, LogStats, cleanup, format_size, parse_size, stats,
 };
@@ -71,15 +75,15 @@ pub use level::Level;
 pub use logger::{Logger, LoggerBuilder};
 pub use output::{FileOutput, Output, TerminalOutput};
 
-// CLI re-exports
+// Expose CLI helpers at crate root so downstream tools can reuse preset logic without deep imports
 #[cfg(feature = "cli")]
 pub use cli::PresetRunner;
 
-// Hyprland re-exports
+// Surface Hyprland types at crate root for ergonomic access from event-monitoring tools
 #[cfg(feature = "hyprland")]
 pub use hyprland::{EventFormatter, EventListenerHandle, HyprlandEvent};
 
-// FFI re-exports
+// Re-export every public FFI symbol so C consumers only need `#include "hyprlog.h"` with a single `-lhyprlog` link
 #[cfg(feature = "ffi")]
 pub use ffi::{
     HYPRLOG_LEVEL_DEBUG, HYPRLOG_LEVEL_ERROR, HYPRLOG_LEVEL_INFO, HYPRLOG_LEVEL_TRACE,

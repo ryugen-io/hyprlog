@@ -1,7 +1,6 @@
-//! Hyprland IPC integration.
-//!
-//! Listens to Hyprland's event socket (socket2) for compositor events
-//! and routes them through the logger.
+//! Hyprland exposes compositor events over Unix domain sockets — this module
+//! connects to socket2, parses the wire format, and routes events through
+//! the logger so they appear alongside application logs.
 
 pub mod event;
 pub mod formatter;

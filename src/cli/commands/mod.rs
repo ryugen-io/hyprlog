@@ -1,4 +1,5 @@
-//! CLI command implementations.
+//! Each subcommand lives in its own file — keeps the match arm in main thin
+//! and lets each handler own its argument validation and error reporting.
 
 mod cleanup;
 mod json;

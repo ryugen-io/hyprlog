@@ -1,4 +1,5 @@
-//! Hyprland event listener CLI command.
+//! The REPL's background listener is invisible — `watch` gives users a dedicated
+//! foreground mode to see events in real time for debugging compositor issues.
 
 use crate::config::Config;
 use crate::hyprland::{listener, socket};
@@ -9,25 +10,21 @@ use std::process::ExitCode;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-/// Global shutdown flag for signal handling.
-///
-/// Set by the SIGINT handler registered via `install_shutdown_handler`.
-/// Signal-safe because `AtomicBool::store` with `Relaxed` ordering is
-/// async-signal-safe on all platforms Rust supports.
+/// Global static because POSIX signal handlers can't capture closures —
+/// the handler must store to a fixed address. `AtomicBool::store` with
+/// `Relaxed` ordering is async-signal-safe on all platforms Rust supports.
 static SHUTDOWN: AtomicBool = AtomicBool::new(false);
 
-/// Installs a Ctrl+C handler that sets a shutdown flag.
-///
-/// Returns an `Arc<AtomicBool>` that mirrors the global static, allowing
-/// callers to poll without accessing the static directly.
+/// The event loop checks an `Arc<AtomicBool>` — bridging the global static to an Arc
+/// decouples the signal plumbing from the listener's shutdown interface.
 fn install_shutdown_handler() -> Arc<AtomicBool> {
     let shutdown = Arc::new(AtomicBool::new(false));
     let shutdown_clone = Arc::clone(&shutdown);
 
-    // Reset the static flag
+    // Previous invocations may have left this set — reset so the new session starts clean
     SHUTDOWN.store(false, Ordering::Relaxed);
 
-    // Watcher thread: polls the static flag and propagates to the Arc
+    // Watcher thread bridges static→Arc because signal handlers can't access heap-allocated Arcs
     std::thread::Builder::new()
         .name("signal-watcher".into())
         .spawn(move || {
@@ -41,7 +38,7 @@ fn install_shutdown_handler() -> Arc<AtomicBool> {
         })
         .ok();
 
-    // Register POSIX signal handler
+    // POSIX signal handler — only atomic stores are safe inside signal context
     // SAFETY: The handler only performs an atomic store, which is async-signal-safe.
     #[cfg(unix)]
     unsafe {
@@ -51,34 +48,33 @@ fn install_shutdown_handler() -> Arc<AtomicBool> {
     shutdown
 }
 
-/// Signal handler function — must be async-signal-safe.
+/// Minimal handler body — anything beyond an atomic store risks undefined behavior in signal context.
 #[cfg(unix)]
 extern "C" fn sigint_handler(_sig: std::ffi::c_int) {
     SHUTDOWN.store(true, Ordering::Relaxed);
 }
 
-/// Registers SIGINT handler via libc's `signal()`.
+/// Raw `signal()` call instead of a crate because we only need SIGINT and
+/// adding a dependency for one syscall wrapper isn't worth the cost.
 ///
 /// # Safety
-/// Calls POSIX `signal()`. The handler only performs an atomic store.
+/// The handler only performs an async-signal-safe atomic store.
 #[cfg(unix)]
 unsafe fn register_sigint_handler() {
-    // SIGINT = 2 on all POSIX platforms
+    // Hardcoded SIGINT=2 avoids depending on libc just for a constant
     unsafe extern "C" {
         fn signal(sig: std::ffi::c_int, handler: extern "C" fn(std::ffi::c_int)) -> usize;
     }
     unsafe { signal(2, sigint_handler) };
 }
 
-/// Handles `hyprlog watch [--events <filter>] [--min-level <level>]`.
-///
-/// Connects to Hyprland's event socket and streams events through the logger.
-/// Blocks until Ctrl+C.
+/// Foreground event streaming — blocks until Ctrl+C so the user sees events
+/// in real time. Useful for debugging window rules, keybinds, and compositor behavior.
 #[must_use]
 pub fn cmd_watch(args: &[&str], config: &Config, logger: &Logger) -> ExitCode {
     let mut hyprland_config = config.hyprland.clone();
 
-    // Parse --events filter (comma-separated allowlist)
+    // Allowlist filter — 43 event types flood the terminal, users usually care about 2-3
     if let Some(idx) = args.iter().position(|&a| a == "--events")
         && let Some(&filter) = args.get(idx + 1)
     {
@@ -86,12 +82,12 @@ pub fn cmd_watch(args: &[&str], config: &Config, logger: &Logger) -> ExitCode {
         hyprland_config.event_filter = Some(allowed);
     }
 
-    // Parse --min-level filter
+    // Min-level filter — hides Debug-level events (focus changes etc.) that dominate the stream
     if let Some(idx) = args.iter().position(|&a| a == "--min-level")
         && let Some(&level_str) = args.get(idx + 1)
     {
         if let Ok(min_level) = level_str.parse::<Level>() {
-            // Add events below this level to the ignore list
+            // Events below min-level get added to the ignore list rather than changing the level map
             let defaults = crate::hyprland::level_map::default_level_map();
             for (&event_name, &default_level) in &defaults {
                 if default_level < min_level

@@ -1,10 +1,11 @@
-//! Themes command implementation.
+//! Choosing a theme by name in the config file is a blind guess without seeing
+//! the colors first — this command lets users preview before committing.
 
 use crate::logger::Logger;
 use crate::shell::themes::{ALL_THEMES, Theme};
 use std::process::ExitCode;
 
-/// Handles `hyprlog themes [list|preview]`.
+/// Two modes: "list" for quick reference, "preview" for visual comparison of colored prompts.
 #[must_use]
 pub fn cmd_themes(args: &[&str], logger: &Logger) -> ExitCode {
     match args.first().copied() {

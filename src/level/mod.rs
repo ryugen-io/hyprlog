@@ -1,26 +1,26 @@
-//! Log level definitions.
+//! Severity levels that gate which messages reach which outputs.
 
 use std::fmt;
 use std::str::FromStr;
 
-/// Log severity levels, ordered from most to least verbose.
+/// Derives `Ord` so the logger can compare a message's level against the configured minimum.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub enum Level {
-    /// Fine-grained debugging information.
+    /// High-volume instrumentation that would be too noisy outside of development.
     Trace = 0,
-    /// Debugging information.
+    /// Startup, teardown, and state-change details useful for diagnosing issues.
     Debug = 1,
-    /// Informational messages.
+    /// Normal operational milestones — connection established, config loaded, etc.
     #[default]
     Info = 2,
-    /// Warning messages.
+    /// Non-fatal anomalies that may need attention (deprecated features, retries).
     Warn = 3,
-    /// Error messages.
+    /// Unrecoverable failures that prevent the operation from completing.
     Error = 4,
 }
 
 impl Level {
-    /// Returns the canonical lowercase name.
+    /// Lowercase because config files and CLI args use lowercase level strings.
     #[must_use]
     pub const fn as_str(self) -> &'static str {
         match self {
@@ -32,7 +32,7 @@ impl Level {
         }
     }
 
-    /// Returns all levels in order of verbosity.
+    /// Convenience for iteration — used by help output, shell completion, and tests.
     #[must_use]
     pub const fn all() -> [Self; 5] {
         [
@@ -51,7 +51,7 @@ impl fmt::Display for Level {
     }
 }
 
-/// Error returned when parsing an invalid level string.
+/// Returned by `FromStr` so callers can distinguish "unknown level" from other parse failures.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParseLevelError(String);
 

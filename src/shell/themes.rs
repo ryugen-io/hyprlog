@@ -1,12 +1,13 @@
-//! Prompt themes for the interactive shell.
+//! Users want the REPL prompt to match their terminal aesthetic — built-in themes
+//! cover the most popular color schemes without requiring manual hex configuration.
 
 use std::fmt::Write;
 use std::str::FromStr;
 
-/// RGB color tuple.
+/// Each gradient stop needs red, green, blue components for true-color ANSI output.
 type Rgb = (u8, u8, u8);
 
-/// All available themes.
+/// Centralized list so `themes list` and `themes preview` commands iterate without hardcoding.
 pub const ALL_THEMES: &[Theme] = &[
     Theme::Dracula,
     Theme::Nord,
@@ -18,7 +19,7 @@ pub const ALL_THEMES: &[Theme] = &[
     Theme::Ocean,
 ];
 
-/// Available prompt themes.
+/// Each variant holds its 8-color gradient for the "hyprlog>" prompt — no runtime lookup needed.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum Theme {
     #[default]
@@ -33,7 +34,7 @@ pub enum Theme {
 }
 
 impl Theme {
-    /// Returns the theme name as a string.
+    /// Config files use string names — this maps the enum variant to its canonical TOML key.
     #[must_use]
     pub const fn name(self) -> &'static str {
         match self {
@@ -48,12 +49,12 @@ impl Theme {
         }
     }
 
-    /// Returns all available theme names.
+    /// CLI help and `themes list` need the full set of valid theme names.
     #[must_use]
     pub fn list() -> Vec<&'static str> {
         ALL_THEMES.iter().map(|t| t.name()).collect()
     }
-    /// Returns the gradient colors for each character in "hyprlog>".
+    /// Each of the 8 characters in "hyprlog>" gets its own color from the theme's palette.
     #[must_use]
     pub const fn gradient(self) -> &'static [Rgb; 8] {
         match self {
@@ -140,7 +141,7 @@ impl Theme {
         }
     }
 
-    /// Builds the colored prompt string.
+    /// Assembles the ANSI-escaped gradient prompt — called once at shell startup, not per keystroke.
     #[must_use]
     pub fn build_prompt(self) -> String {
         let chars = ['h', 'y', 'p', 'r', 'l', 'o', 'g', '>'];

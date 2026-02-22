@@ -97,7 +97,7 @@ keep_last = 5
 
 [hyprland]
 enabled = true
-scope = "HYPR"
+scope = "hyprland"
 ignore_events = ["mousemove"]
 
 [tag]

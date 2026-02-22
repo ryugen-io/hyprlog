@@ -1,4 +1,5 @@
-//! File output with path templates.
+//! Persistent logs survive process restarts — critical for post-mortem debugging
+//! when terminal scrollback is lost or the session crashed.
 
 use crate::fmt::{FormatTemplate, FormatValues, TagConfig, style};
 use crate::internal;
@@ -17,33 +18,33 @@ thread_local! {
     static IN_FILE_WRITE: Cell<bool> = const { Cell::new(false) };
 }
 
-/// File output configuration.
+/// All file-output state in one struct — path templates, timestamp format, and a write buffer for batching raw items.
 pub struct FileOutput {
-    /// Base directory for log files.
+    /// Default XDG path doesn't work for every deployment (containers, custom setups).
     base_dir: String,
-    /// Path structure template (e.g., `{year}/{month}/{app}`).
+    /// Different projects organize logs differently (by app, by date, flat).
     path_template: FormatTemplate,
-    /// Filename structure template (e.g., `{level}_{day}.log`).
+    /// Multiple apps in the same directory need distinct filenames.
     filename_template: FormatTemplate,
-    /// Content structure template.
+    /// File output doesn't need ANSI but may need timestamps or different column order than terminal.
     content_template: FormatTemplate,
-    /// Timestamp format (strftime).
+    /// Different locales and log analysis tools expect different timestamp formats.
     timestamp_format: String,
-    /// Application name for templates.
+    /// Without this, all apps would dump logs into the same directory.
     app_name: String,
-    /// Tag formatting config.
+    /// File logs often need simpler tags than terminal for grep-friendliness.
     tag_config: TagConfig,
-    /// Buffered line (header + raw items collected).
+    /// Raw items (list entries) are collected and appended to the preceding header line on flush.
     buffer: Mutex<Option<BufferedLine>>,
 }
 
-/// A buffered log line with collected raw items.
+/// Groups a header line with its following raw items so they're written as one logical entry.
 struct BufferedLine {
-    /// The formatted header line.
+    /// The timestamp + tag + scope + message content that starts the log entry.
     content: String,
-    /// Path to write to.
+    /// Resolved once at buffer creation — avoids re-expanding templates for every raw item.
     path: PathBuf,
-    /// Collected raw items.
+    /// Raw `logger.raw()` calls append here until the next normal log line triggers a flush.
     items: Vec<String>,
 }
 
@@ -54,7 +55,7 @@ impl Default for FileOutput {
 }
 
 impl FileOutput {
-    /// Creates a new file output with defaults.
+    /// Sensible XDG defaults let the builder work without any configuration for common setups.
     #[must_use]
     pub fn new() -> Self {
         let base_dir = directories::ProjectDirs::from("", "", "hyprlog").map_or_else(
@@ -80,56 +81,56 @@ impl FileOutput {
         }
     }
 
-    /// Sets the base directory.
+    /// Default XDG path doesn't work for every deployment (containers, custom setups).
     #[must_use]
     pub fn base_dir(mut self, dir: impl Into<String>) -> Self {
         self.base_dir = dir.into();
         self
     }
 
-    /// Sets the path structure template.
+    /// Different projects organize logs differently (by app, by date, flat, etc.).
     #[must_use]
     pub fn path_structure(mut self, template: &str) -> Self {
         self.path_template = FormatTemplate::parse(template);
         self
     }
 
-    /// Sets the filename structure template.
+    /// Multiple apps logging to the same directory need distinct filenames.
     #[must_use]
     pub fn filename_structure(mut self, template: &str) -> Self {
         self.filename_template = FormatTemplate::parse(template);
         self
     }
 
-    /// Sets the content structure template.
+    /// File output doesn't need ANSI but may need timestamps or different column order.
     #[must_use]
     pub fn content_structure(mut self, template: &str) -> Self {
         self.content_template = FormatTemplate::parse(template);
         self
     }
 
-    /// Sets the timestamp format.
+    /// Different locales and log analysis tools expect different timestamp formats.
     #[must_use]
     pub fn timestamp_format(mut self, format: impl Into<String>) -> Self {
         self.timestamp_format = format.into();
         self
     }
 
-    /// Sets the application name.
+    /// Without this, all apps would dump logs into the same directory.
     #[must_use]
     pub fn app_name(mut self, name: impl Into<String>) -> Self {
         self.app_name = name.into();
         self
     }
 
-    /// Sets the tag configuration.
+    /// File logs often need simpler tags than terminal for grep-friendliness.
     #[must_use]
     pub fn tag_config(mut self, config: TagConfig) -> Self {
         self.tag_config = config;
         self
     }
 
-    /// Resolves the base directory (expands ~).
+    /// Config values use `~` for portability — the OS needs an absolute path for `fs::create_dir_all`.
     fn resolve_base_dir(&self) -> PathBuf {
         let expanded = shellexpand::tilde(&self.base_dir);
         let path = PathBuf::from(expanded.as_ref());
@@ -140,7 +141,7 @@ impl FileOutput {
         path
     }
 
-    /// Builds the full file path for a record.
+    /// Combines base dir + path template + filename template so each record lands in the right file.
     fn build_path(&self, record: &LogRecord) -> PathBuf {
         let base = self.resolve_base_dir();
         let now = Local::now();
@@ -161,7 +162,7 @@ impl FileOutput {
         base.join(rel_path).join(filename)
     }
 
-    /// Formats the content line.
+    /// Strips ANSI tags and applies the content template — file output must be plain text for grep/awk.
     fn format_content(&self, record: &LogRecord) -> String {
         let now = Local::now();
         let timestamp = now.format(&self.timestamp_format).to_string();
@@ -183,7 +184,7 @@ impl FileOutput {
 }
 
 impl FileOutput {
-    /// Writes a buffered line to file.
+    /// Flushes the accumulated header + raw items as a single line to avoid interleaved writes from concurrent threads.
     fn write_buffered(buf: &BufferedLine) -> Result<(), crate::Error> {
         // Create directories
         if let Some(parent) = buf.path.parent()
@@ -208,7 +209,7 @@ impl FileOutput {
         Ok(())
     }
 
-    /// Inner write implementation (called with recursion guard set).
+    /// Separated from the `Output::write` impl so the recursion guard wraps this cleanly.
     fn write_inner(&self, record: &LogRecord) -> Result<(), crate::Error> {
         let mut buffer = self.buffer.lock().unwrap();
 

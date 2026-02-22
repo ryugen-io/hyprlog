@@ -1,4 +1,6 @@
-//! Log file cleanup and statistics.
+//! Without automated retention, log directories grow until the disk fills —
+//! this module enforces age, size, and count limits so users don't have to
+//! remember to clean up manually.
 
 mod compress;
 mod files;
@@ -19,10 +21,11 @@ use std::fs;
 use std::path::Path;
 use std::time::SystemTime;
 
-/// Performs cleanup on log files.
+/// Single entry point for all retention policies — combining age, size, date, and
+/// keep-last into one pass avoids multiple directory scans and conflicting deletions.
 ///
 /// # Errors
-/// Returns error if cleanup fails.
+/// File I/O or compression failures are surfaced so callers can report partial progress.
 #[allow(clippy::too_many_lines)]
 pub fn cleanup(base_dir: &Path, options: &CleanupOptions) -> Result<CleanupResult, crate::Error> {
     internal::info(
@@ -45,10 +48,10 @@ pub fn cleanup(base_dir: &Path, options: &CleanupOptions) -> Result<CleanupResul
         return Ok(result);
     }
 
-    // Collect all log files
+    // Scan base_dir recursively since logs may be nested in app/date subdirectories
     let mut files = collect_log_files(base_dir, now, options.app_filter.as_deref())?;
 
-    // Sort by age (oldest first for deletion, newest first for keep_last)
+    // Oldest files first ensures we delete the least relevant logs before newer ones
     files.sort_by_key(|f| std::cmp::Reverse(f.age_days));
 
     // Track which files to skip (keep_last protection)
@@ -65,14 +68,14 @@ pub fn cleanup(base_dir: &Path, options: &CleanupOptions) -> Result<CleanupResul
         }
     }
 
-    // Determine which files should be processed
+    // Apply filter criteria to each file — protected files are always exempt
     for file in &files {
-        // Skip protected files
+        // keep_last-protected files must survive regardless of age or size filters
         if protected_paths.contains(&file.path) {
             continue;
         }
 
-        // Check if file should be processed based on filters
+        // Any matching filter is sufficient to mark a file for processing
         let age_match = options
             .max_age_days
             .is_some_and(|max| file.age_days > u64::from(max));
@@ -93,7 +96,7 @@ pub fn cleanup(base_dir: &Path, options: &CleanupOptions) -> Result<CleanupResul
 
         if should_process {
             if options.compress {
-                // Compress instead of delete
+                // Compression preserves content while freeing most of the space
                 if options.dry_run {
                     result.would_compress.push(file.path.clone());
                     // Estimate ~50% compression ratio for text logs
@@ -126,7 +129,7 @@ pub fn cleanup(base_dir: &Path, options: &CleanupOptions) -> Result<CleanupResul
                     }
                 }
             } else {
-                // Delete
+                // Permanent deletion — the user chose not to compress
                 if options.dry_run {
                     result.would_delete.push(file.path.clone());
                     result.would_free += file.size;
@@ -141,7 +144,7 @@ pub fn cleanup(base_dir: &Path, options: &CleanupOptions) -> Result<CleanupResul
         }
     }
 
-    // Delete by size limit (only applies to deletion, not compression)
+    // Size-based retention is a separate pass — age filters may not be enough to stay under the limit
     if !options.compress
         && let Some(limit) = options.max_total_size
     {
@@ -156,7 +159,7 @@ pub fn cleanup(base_dir: &Path, options: &CleanupOptions) -> Result<CleanupResul
 
         let mut total: u64 = remaining.iter().map(|f| f.size).sum();
 
-        // Delete oldest files until under limit
+        // Evict oldest first — they're least likely to be needed for debugging
         for file in remaining.iter().rev() {
             if total <= limit {
                 break;
@@ -172,7 +175,7 @@ pub fn cleanup(base_dir: &Path, options: &CleanupOptions) -> Result<CleanupResul
         }
     }
 
-    // Clean up empty directories
+    // Empty directories left behind make the tree look cluttered and confuse users
     if !options.dry_run {
         cleanup_empty_dirs(base_dir)?;
     }
@@ -187,10 +190,11 @@ pub fn cleanup(base_dir: &Path, options: &CleanupOptions) -> Result<CleanupResul
     Ok(result)
 }
 
-/// Gets statistics about log files.
+/// Users need disk usage visibility before deciding on cleanup policies —
+/// this gathers the same file inventory as cleanup but only reads, never deletes.
 ///
 /// # Errors
-/// Returns error if stats cannot be collected.
+/// Directory traversal may fail on permission issues or broken symlinks.
 pub fn stats(base_dir: &Path, app_filter: Option<&str>) -> Result<LogStats, crate::Error> {
     let mut stats = LogStats::default();
     let now = SystemTime::now();

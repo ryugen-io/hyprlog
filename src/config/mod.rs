@@ -1,4 +1,7 @@
-//! Optional TOML configuration for hyprlog.
+//! TOML configuration loading, `source = "..."` include resolution, and per-app override merging.
+//!
+//! Separated from struct definitions so that the loading logic (file I/O, cycle detection,
+//! merge strategy) stays independent of the serde schema.
 
 mod structs;
 
@@ -16,44 +19,47 @@ use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-/// Root configuration structure.
+/// A completely empty config file must still produce a working logger — `#[serde(default)]`
+/// on every field ensures zero-config works out of the box.
 #[derive(Debug, Clone, Deserialize, Default)]
 #[serde(default)]
 pub struct Config {
-    /// General settings.
+    /// Severity filtering and app identity apply to all outputs — they belong above any specific backend.
     pub general: GeneralConfig,
-    /// Terminal output settings.
+    /// Terminal output needs its own color, icon, and structure settings independent of file output.
     pub terminal: TerminalConfig,
-    /// Shell settings.
+    /// REPL theme and prompt settings don't affect non-interactive usage — separate section avoids clutter.
     pub shell: ShellConfig,
-    /// File output settings.
+    /// File output has different concerns than terminal — base directory, rotation, and naming patterns.
     pub file: FileConfig,
-    /// JSON database output settings.
+    /// JSONL output serves a different purpose (machine-readable queries) than text logs — separate config.
     pub json: JsonConfig,
-    /// Hyprland IPC integration settings.
+    /// Hyprland integration is optional — these settings only matter when the feature flag is active.
     pub hyprland: HyprlandConfig,
-    /// Cleanup settings.
+    /// Retention defaults belong in config so `hyprlog cleanup` works without flags every time.
     pub cleanup: CleanupConfig,
-    /// Tag formatting settings.
+    /// Tag appearance varies by user preference — some want `[INFO]`, others `INFO:` or `ℹ`.
     pub tag: TagConfigFile,
-    /// Scope formatting settings.
+    /// Scope column width and alignment affect readability — different users prefer different layouts.
     pub scope: ScopeConfigFile,
-    /// Message formatting settings.
+    /// Message transforms (uppercase, lowercase) apply independently of tag/scope transforms.
     pub message: MessageConfigFile,
-    /// Auto-highlighting settings.
+    /// Auto-highlighting makes URLs, paths, and error keywords visible without manual markup.
     pub highlight: HighlightConfig,
-    /// Color definitions.
+    /// Named colors avoid repeating hex codes across tag, highlight, and scope config sections.
     pub colors: HashMap<String, String>,
-    /// Icon definitions per level.
+    /// Icon glyphs vary by font availability — users need to override defaults for their environment.
     pub icons: IconsConfig,
-    /// Log presets/dictionary.
+    /// Frequently-used log commands are tedious to retype — presets bundle them into single names.
     pub presets: HashMap<String, PresetConfig>,
-    /// Per-app configuration overrides.
-    /// Key is the app name (e.g., "sysrat"), value contains overrides.
+    /// Different apps sharing one config need to diverge on level, output path, or terminal settings
+    /// without maintaining separate config files for each.
     pub apps: HashMap<String, AppConfig>,
 }
 
-/// Extracts `source = "path"` lines from config content.
+/// Scans raw TOML for `source = "..."` directives before deserialization,
+/// since serde cannot handle them -- they are a Hyprland-style extension.
+/// Returns the extracted paths and the remaining TOML content stripped of those lines.
 #[doc(hidden)]
 #[must_use]
 pub fn extract_sources(content: &str) -> (Vec<String>, String) {
@@ -81,13 +87,11 @@ pub fn extract_sources(content: &str) -> (Vec<String>, String) {
 }
 
 impl Config {
-    /// Loads configuration from the default location.
-    ///
-    /// Looks for `~/.config/hypr/hyprlog.conf`.
-    /// Supports Hyprland-style `source = "path"` directives.
+    /// Primary entry point — CLI and library consumers both need the user's full config
+    /// with all `source = "..."` includes resolved and per-app overrides merged.
     ///
     /// # Errors
-    /// Returns error if config cannot be loaded.
+    /// Fails if the config directory can't be determined or TOML parsing hits a syntax error.
     pub fn load() -> Result<Self, crate::Error> {
         internal::debug("CONFIG", "Loading config from default location");
         let config_path = Self::get_config_path()?;
@@ -99,15 +103,18 @@ impl Config {
         Ok(config)
     }
 
-    /// Loads configuration from a specific path.
+    /// Loads configuration from an explicit path instead of the default location.
+    ///
+    /// Useful for FFI callers and tests that need to point at a non-standard config file.
     ///
     /// # Errors
-    /// Returns error if file cannot be read or parsed.
+    /// Returns error if the file cannot be read, parsed, or contains cyclic includes.
     pub fn load_from(path: &Path) -> Result<Self, crate::Error> {
         Self::load_with_sources(path, &mut HashSet::new())
     }
 
-    /// Loads configuration with source file processing and cycle detection.
+    /// Recursive loader that expands `source = "..."` includes while tracking
+    /// visited paths in `seen` to break include cycles.
     fn load_with_sources(path: &Path, seen: &mut HashSet<PathBuf>) -> Result<Self, crate::Error> {
         if !path.exists() {
             internal::debug("CONFIG", "Config file not found, using defaults");
@@ -143,7 +150,8 @@ impl Config {
         Ok(config)
     }
 
-    /// Merges another config into self.
+    /// Folds a sourced config's map-type fields into `self` without overwriting
+    /// existing keys, so the primary file's values take precedence over includes.
     pub fn merge(&mut self, other: Self) {
         for (k, v) in other.colors {
             self.colors.entry(k).or_insert(v);
@@ -168,21 +176,20 @@ impl Config {
         }
     }
 
-    /// Returns a config with app-specific overrides applied.
-    ///
-    /// If an `[apps.X]` section exists for the given app name, its settings
-    /// override the global config values.
+    /// Per-app overrides let multiple binaries share one config file while still
+    /// diverging on level, terminal, or file settings — without this, each app
+    /// would need its own config file.
     #[must_use]
     pub fn for_app(&self, app_name: &str) -> Self {
         let mut config = self.clone();
 
         if let Some(app_config) = self.apps.get(app_name) {
-            // Apply level override
+            // Level gates everything else, so it must be overridden first
             if let Some(ref level) = app_config.level {
                 config.general.level.clone_from(level);
             }
 
-            // Apply terminal overrides
+            // Terminal settings are per-field optional so partial overrides work
             if let Some(ref terminal) = app_config.terminal {
                 if let Some(enabled) = terminal.enabled {
                     config.terminal.enabled = enabled;
@@ -198,7 +205,7 @@ impl Config {
                 }
             }
 
-            // Apply file overrides
+            // File overrides let an app redirect its logs to a separate directory
             if let Some(ref file) = app_config.file {
                 if let Some(enabled) = file.enabled {
                     config.file.enabled = enabled;
@@ -212,23 +219,23 @@ impl Config {
         config
     }
 
-    /// Returns the default config file path.
+    /// XDG-compliant path under `~/.config/hypr/` — matches Hyprland's config directory convention.
     ///
     /// # Errors
-    /// Returns error if path cannot be determined.
+    /// Fails when the platform has no concept of a config directory (unlikely on Linux).
     pub fn get_config_path() -> Result<PathBuf, crate::Error> {
         directories::BaseDirs::new()
             .map(|dirs| dirs.config_dir().join("hypr").join("hyprlog.conf"))
             .ok_or(crate::Error::ConfigDirNotFound)
     }
 
-    /// Parses the general level string to a Level enum.
+    /// Config stores level as a string for TOML ergonomics — this converts to the typed enum the logger needs.
     #[must_use]
     pub fn parse_level(&self) -> Level {
         self.general.level.parse().unwrap_or(Level::Info)
     }
 
-    /// Parses the terminal icon type.
+    /// String-based config needs conversion to the typed enum the icon renderer expects.
     #[must_use]
     pub fn parse_icon_type(&self) -> IconType {
         match self.terminal.icons.to_lowercase().as_str() {
@@ -238,7 +245,7 @@ impl Config {
         }
     }
 
-    /// Parses the tag transform.
+    /// Accepts multiple aliases ("uppercase"/"upper") for user convenience — maps them all to one enum variant.
     #[must_use]
     pub fn parse_transform(&self) -> Transform {
         match self.tag.transform.to_lowercase().as_str() {
@@ -249,7 +256,7 @@ impl Config {
         }
     }
 
-    /// Parses the tag alignment.
+    /// Defaults to center alignment since tag labels have consistent short widths.
     #[must_use]
     pub fn parse_alignment(&self) -> Alignment {
         match self.tag.alignment.to_lowercase().as_str() {
@@ -259,7 +266,7 @@ impl Config {
         }
     }
 
-    /// Parses the scope transform.
+    /// Scope transform is independent of tag transform — users may want uppercase tags but lowercase scopes.
     #[must_use]
     pub fn parse_scope_transform(&self) -> Transform {
         match self.scope.transform.to_lowercase().as_str() {
@@ -270,7 +277,7 @@ impl Config {
         }
     }
 
-    /// Parses the scope alignment.
+    /// Defaults to left alignment since scope names have variable length and left-align reads more naturally.
     #[must_use]
     pub fn parse_scope_alignment(&self) -> Alignment {
         match self.scope.alignment.to_lowercase().as_str() {
@@ -280,7 +287,7 @@ impl Config {
         }
     }
 
-    /// Parses the message transform.
+    /// Message body transforms are rare but some users want all-lowercase or all-uppercase output.
     #[must_use]
     pub fn parse_message_transform(&self) -> Transform {
         match self.message.transform.to_lowercase().as_str() {
@@ -291,7 +298,7 @@ impl Config {
         }
     }
 
-    /// Parses a color from the colors map.
+    /// Named color lookup lets config sections reference `accent` instead of repeating `#ff79c6` everywhere.
     #[must_use]
     pub fn get_color(&self, name: &str) -> Option<Color> {
         self.colors.get(name).map(|hex| Color::from_hex(hex))

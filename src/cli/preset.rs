@@ -1,27 +1,28 @@
-//! Preset loading and execution.
+//! Repetitive log commands with fixed level/scope/message are tedious to type —
+//! presets let users define them once in config and invoke by name.
 
 use crate::config::Config;
 use crate::internal;
 use crate::level::Level;
 use crate::logger::Logger;
 
-/// Runs presets from configuration.
+/// Borrows config and logger to avoid cloning — presets are short-lived operations, not long-running state.
 pub struct PresetRunner<'a> {
     config: &'a Config,
     logger: &'a Logger,
 }
 
 impl<'a> PresetRunner<'a> {
-    /// Creates a new preset runner.
+    /// Both config and logger come from the caller — the runner doesn't own any state.
     #[must_use]
     pub const fn new(config: &'a Config, logger: &'a Logger) -> Self {
         Self { config, logger }
     }
 
-    /// Runs a preset by name.
+    /// Looks up the named preset in config, validates its level string, and emits the log entry.
     ///
     /// # Errors
-    /// Returns error if preset not found or has invalid level.
+    /// Fails early if the name doesn't exist or the level string can't be parsed — avoids silent misconfiguration.
     pub fn run(&self, name: &str) -> Result<(), crate::Error> {
         internal::trace("PRESET", &format!("Looking up preset: {name}"));
         let preset = self.config.presets.get(name).ok_or_else(|| {
@@ -52,7 +53,7 @@ impl<'a> PresetRunner<'a> {
         Ok(())
     }
 
-    /// Lists available presets with optional app name.
+    /// The shell and CLI both need to enumerate presets — returning name+app pairs lets callers group by app.
     #[must_use]
     pub fn list(&self) -> Vec<(&str, Option<&str>)> {
         self.config
@@ -62,7 +63,7 @@ impl<'a> PresetRunner<'a> {
             .collect()
     }
 
-    /// Checks if a preset exists.
+    /// Pre-check avoids running a preset that will immediately fail with "not found".
     #[must_use]
     pub fn exists(&self, name: &str) -> bool {
         self.config.presets.contains_key(name)

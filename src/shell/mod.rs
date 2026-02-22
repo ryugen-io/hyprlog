@@ -1,4 +1,5 @@
-//! hyprlog interactive shell.
+//! A persistent REPL lets power users issue log commands, run presets, and inspect stats
+//! without restarting the process or typing the full CLI invocation each time.
 
 pub mod themes;
 
@@ -14,10 +15,10 @@ use rustyline::{DefaultEditor, Editor};
 use std::str::FromStr;
 use themes::Theme;
 
-/// Runs the interactive shell.
+/// Entry point for the REPL loop — initializes readline, themes, and optional Hyprland listener.
 ///
 /// # Errors
-/// Returns error message if shell cannot be initialized.
+/// Readline initialization can fail if the terminal is not interactive.
 pub fn run(config: &Config) -> Result<(), String> {
     internal::debug("SHELL", "Initializing shell...");
     let logger = std::sync::Arc::new(build_logger(config, None));

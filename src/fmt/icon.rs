@@ -1,21 +1,22 @@
-//! Icon sets for log output.
+//! Not every terminal has `NerdFont` glyphs — a fallback chain (`NerdFont` → ASCII → none)
+//! ensures log output renders correctly regardless of font support.
 
 use crate::level::Level;
 use std::collections::HashMap;
 
-/// Icon set type selection.
+/// Font availability varies across environments — the user must choose which glyph family works for them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum IconType {
-    /// Nerd Font icons (requires compatible font).
+    /// Most Hyprland users already have `NerdFont` — these glyphs give the richest visual feedback.
     #[default]
     NerdFont,
-    /// ASCII-only icons (universal compatibility).
+    /// SSH sessions, CI runners, and minimal containers can't render `NerdFont` — ASCII works everywhere.
     Ascii,
-    /// No icons.
+    /// Machine-parsed output and piped pipelines break if icons inject unexpected characters.
     None,
 }
 
-/// Collection of icons for each log level.
+/// Bundles the glyph map with its type so downstream code can query icons without knowing which family is active.
 #[derive(Debug, Clone)]
 pub struct IconSet {
     icons: HashMap<Level, String>,
@@ -23,7 +24,7 @@ pub struct IconSet {
 }
 
 impl IconSet {
-    /// Creates a new icon set with Nerd Font icons.
+    /// `NerdFont` is the most common icon font in Hyprland setups — sensible default for most users.
     #[must_use]
     pub fn nerdfont() -> Self {
         let mut icons = HashMap::new();
@@ -39,7 +40,7 @@ impl IconSet {
         }
     }
 
-    /// Creates a new icon set with ASCII icons.
+    /// Fallback for environments where `NerdFont` isn't available — `[i]`/`[!]`/`[x]` still convey severity.
     #[must_use]
     pub fn ascii() -> Self {
         let mut icons = HashMap::new();
@@ -55,7 +56,7 @@ impl IconSet {
         }
     }
 
-    /// Creates an empty icon set (no icons).
+    /// Some outputs (file, JSON, piped) should never contain icon characters.
     #[must_use]
     pub fn none() -> Self {
         Self {
@@ -64,18 +65,18 @@ impl IconSet {
         }
     }
 
-    /// Gets the icon for a log level.
+    /// Callers shouldn't need to know which icon family is active — they just need the glyph for a level.
     #[must_use]
     pub fn get(&self, level: Level) -> &str {
         self.icons.get(&level).map_or("", String::as_str)
     }
 
-    /// Sets a custom icon for a level.
+    /// Config-defined icon overrides let users replace built-in glyphs with their own preference.
     pub fn set(&mut self, level: Level, icon: impl Into<String>) {
         self.icons.insert(level, icon.into());
     }
 
-    /// Returns the icon type.
+    /// Downstream code may need to know the active family for conditional rendering decisions.
     #[must_use]
     pub const fn icon_type(&self) -> IconType {
         self.icon_type

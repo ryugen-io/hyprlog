@@ -1,6 +1,7 @@
-//! Size parsing and formatting utilities.
+//! Config files specify sizes as "500M" or "1G" but cleanup logic operates on
+//! raw bytes — these two functions bridge that gap.
 
-/// Parses a size string like "500M" or "1G" to bytes.
+/// Config files and CLI args use "500M"/"1G" notation, not raw byte counts.
 #[must_use]
 pub fn parse_size(s: &str) -> Option<u64> {
     let s = s.trim().to_uppercase();
@@ -27,7 +28,7 @@ pub fn parse_size(s: &str) -> Option<u64> {
     })
 }
 
-/// Formats bytes as a human-readable string.
+/// Raw byte counts are unreadable in terminal output.
 #[must_use]
 pub fn format_size(bytes: u64) -> String {
     #[allow(clippy::cast_precision_loss)]

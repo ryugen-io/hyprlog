@@ -1,4 +1,5 @@
-//! Log file collection utilities.
+//! Cleanup and stats both need the same file inventory — centralizing discovery
+//! here avoids duplicate directory walks and inconsistent metadata extraction.
 
 use super::stats::LogFileInfo;
 use crate::internal;
@@ -7,7 +8,8 @@ use std::fs;
 use std::path::Path;
 use std::time::SystemTime;
 
-/// Collects all log files from the directory.
+/// Age and size metadata must be gathered at scan time — re-statting files later
+/// introduces TOCTOU races where files may change between scan and action.
 pub(super) fn collect_log_files(
     dir: &Path,
     now: SystemTime,
@@ -50,10 +52,10 @@ fn collect_log_files_recursive(
             if let Some(app) = app_filter {
                 let dir_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
                 if dir_name == app {
-                    // Found app dir, collect all files within
+                    // Matched the target app directory, so collect everything inside without further filtering
                     collect_log_files_recursive(&path, now, None, files, folders)?;
                 } else {
-                    // Keep searching
+                    // Not the target app dir yet, keep descending to find it deeper in the tree
                     collect_log_files_recursive(&path, now, app_filter, files, folders)?;
                 }
             } else {
@@ -75,7 +77,7 @@ fn collect_log_files_recursive(
                 chrono::DateTime::from_timestamp(timestamp, 0).map(|dt| dt.naive_utc().date())
             });
 
-            // Track parent folder
+            // Record unique parent dirs for the "N folders" summary in debug output
             if let Some(parent) = path.parent() {
                 folders.insert(parent.display().to_string());
             }

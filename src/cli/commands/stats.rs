@@ -1,4 +1,5 @@
-//! Stats command implementation.
+//! Users can't make informed cleanup decisions without knowing how much disk
+//! space logs consume and how they're distributed across apps.
 
 use crate::cleanup::stats;
 use crate::cli::util::expand_path;
@@ -7,12 +8,12 @@ use crate::internal;
 use crate::logger::Logger;
 use std::process::ExitCode;
 
-/// Handles `hyprlog stats [--app <name>]`.
+/// Optional app filter narrows stats to a single app — useful when one app dominates disk usage.
 #[must_use]
 pub fn cmd_stats(args: &[&str], config: &Config, logger: &Logger) -> ExitCode {
     let base_dir = expand_path(&config.file.base_dir);
 
-    // Parse --app filter
+    // Without a filter, stats cover all apps — the filter isolates a single app's numbers
     let app_filter = args
         .iter()
         .position(|&a| a == "--app")

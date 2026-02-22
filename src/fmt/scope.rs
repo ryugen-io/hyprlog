@@ -1,15 +1,16 @@
-//! Scope formatting for log output.
+//! Scope names like "hyprland", "config", "cleanup" have wildly different lengths —
+//! without padding and alignment, the message column jumps around and becomes unreadable.
 
 use super::tag::{Alignment, Transform};
 
-/// Configuration for scope formatting.
+/// All scope-rendering knobs in one struct so formatting doesn't need a dozen loose parameters.
 #[derive(Debug, Clone)]
 pub struct ScopeConfig {
-    /// Minimum width (padded if shorter).
+    /// Scopes have different lengths — padding keeps the message column aligned.
     pub min_width: usize,
-    /// Text alignment within `min_width`.
+    /// Left-aligned scopes are easiest to scan in most terminals.
     pub alignment: Alignment,
-    /// Text transformation.
+    /// Projects may prefer uppercase scopes for visual distinction from the message body.
     pub transform: Transform,
 }
 
@@ -24,34 +25,34 @@ impl Default for ScopeConfig {
 }
 
 impl ScopeConfig {
-    /// Creates a new scope config with default values.
+    /// Explicit constructor matches the builder-pattern convention used throughout the crate.
     #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Sets the minimum width.
+    /// Different projects have different scope name lengths — the padding target must be adjustable.
     #[must_use]
     pub const fn min_width(mut self, width: usize) -> Self {
         self.min_width = width;
         self
     }
 
-    /// Sets the alignment.
+    /// Alignment within the padded width affects readability vs. machine-parseability.
     #[must_use]
     pub const fn alignment(mut self, alignment: Alignment) -> Self {
         self.alignment = alignment;
         self
     }
 
-    /// Sets the transform.
+    /// Casing preference varies across projects — uppercase scopes stand out, lowercase blend in.
     #[must_use]
     pub const fn transform(mut self, transform: Transform) -> Self {
         self.transform = transform;
         self
     }
 
-    /// Formats a scope string with padding and transformation.
+    /// Single entry point for scope rendering — applies transform and padding in the correct order.
     #[must_use]
     pub fn format(&self, scope: &str) -> String {
         let transformed = self.transform.apply(scope);

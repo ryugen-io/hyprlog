@@ -1,4 +1,5 @@
-//! Formatting and styling utilities for log output.
+//! Log rendering touches colors, icons, templates, scoping, and inline styles — splitting
+//! each concern into its own module prevents a single 2000-line formatting file.
 
 mod color;
 mod format;

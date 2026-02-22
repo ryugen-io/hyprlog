@@ -1,4 +1,5 @@
-//! Output backends for log messages.
+//! The three built-in backends (terminal, file, JSON) can't cover every use case — the `Output`
+//! trait lets users add custom backends without modifying hyprlog itself.
 
 mod file;
 mod json;
@@ -11,23 +12,23 @@ pub use terminal::TerminalOutput;
 use crate::fmt::{FormatValues, TagConfig};
 use crate::level::Level;
 
-/// A log record ready for output.
+/// Carries all data a backend needs to render one log line — avoids passing a dozen loose parameters.
 #[derive(Debug, Clone)]
 pub struct LogRecord {
     pub level: Level,
     pub scope: String,
     pub message: String,
     pub values: FormatValues,
-    /// Optional label override for custom display (e.g., "SUCCESS" instead of "INFO").
+    /// Presets and custom events use domain-specific labels ("SUCCESS", "DEPLOY") that don't map to built-in levels.
     pub label_override: Option<String>,
-    /// Optional app name override (uses logger default if None).
+    /// Presets can target a different app's log directory — `None` falls back to the logger's default.
     pub app_name: Option<String>,
-    /// If true, output raw message without formatting (no tag, icon, scope).
+    /// List items and continuation lines would look broken with repeated `[INFO] SCOPE` prefixes.
     pub raw: bool,
 }
 
 impl LogRecord {
-    /// Returns the formatted tag string, using `label_override` if set.
+    /// Backends shouldn't duplicate the label-override vs. default-level branching logic.
     #[must_use]
     pub fn format_tag(&self, tag_config: &TagConfig) -> String {
         self.label_override.as_ref().map_or_else(
@@ -37,17 +38,17 @@ impl LogRecord {
     }
 }
 
-/// Trait for log output backends.
+/// `Send + Sync` bounds enable concurrent logging from multiple threads without locks on the trait object.
 pub trait Output: Send + Sync {
-    /// Writes a log record.
+    /// Each backend renders the record according to its own format (ANSI, plain text, JSON).
     ///
     /// # Errors
-    /// Returns an error if writing fails.
+    /// I/O errors from the underlying sink (stderr, file, network).
     fn write(&self, record: &LogRecord) -> Result<(), crate::Error>;
 
-    /// Flushes any buffered output.
+    /// Buffered backends (file, JSON) may lose tail data on abrupt exit without an explicit flush.
     ///
     /// # Errors
-    /// Returns an error if flushing fails.
+    /// I/O errors from the underlying sink.
     fn flush(&self) -> Result<(), crate::Error>;
 }

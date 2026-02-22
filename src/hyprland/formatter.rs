@@ -1,14 +1,16 @@
-//! Human-readable formatting for Hyprland events.
+//! Raw IPC event names like "openwindow" and comma-delimited data are cryptic in logs —
+//! translating them to "window opened" with key=value pairs makes log output scannable.
 
 use super::event::HyprlandEvent;
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
-/// Human-readable labels for known Hyprland event names.
+/// Wire names like "openwindow" are terse IPC identifiers, not user-facing text —
+/// this map provides the readable labels that appear in formatted log output.
 static NAME_MAP: LazyLock<HashMap<&'static str, &'static str>> = LazyLock::new(|| {
     let mut m = HashMap::with_capacity(43);
 
-    // Window lifecycle
+    // Window lifecycle — user-visible actions that change what's on screen
     m.insert("openwindow", "window opened");
     m.insert("closewindow", "window closed");
     m.insert("movewindow", "window moved");
@@ -19,13 +21,13 @@ static NAME_MAP: LazyLock<HashMap<&'static str, &'static str>> = LazyLock::new(|
     m.insert("activewindowv2", "window focused");
     m.insert("urgent", "focus requested");
 
-    // Window state
+    // Window state — property toggles, not lifecycle transitions
     m.insert("fullscreen", "fullscreen toggled");
     m.insert("changefloatingmode", "float toggled");
     m.insert("minimized", "minimized");
     m.insert("pin", "pin toggled");
 
-    // Workspace lifecycle
+    // Workspace lifecycle — parallel to window events but at the workspace level
     m.insert("workspace", "workspace changed");
     m.insert("workspacev2", "workspace changed");
     m.insert("createworkspace", "workspace created");
@@ -36,11 +38,11 @@ static NAME_MAP: LazyLock<HashMap<&'static str, &'static str>> = LazyLock::new(|
     m.insert("moveworkspacev2", "workspace moved");
     m.insert("renameworkspace", "workspace renamed");
 
-    // Special workspace
+    // Special workspace — scratchpads and hidden workspaces behave differently from named ones
     m.insert("activespecial", "special workspace");
     m.insert("activespecialv2", "special workspace");
 
-    // Monitor
+    // Monitor — display hotplug and focus changes affect multi-monitor workflows
     m.insert("focusedmon", "monitor focus");
     m.insert("focusedmonv2", "monitor focus");
     m.insert("monitoradded", "monitor added");
@@ -48,22 +50,22 @@ static NAME_MAP: LazyLock<HashMap<&'static str, &'static str>> = LazyLock::new(|
     m.insert("monitorremoved", "monitor removed");
     m.insert("monitorremovedv2", "monitor removed");
 
-    // Groups
+    // Groups — tabbed/grouped window layouts need their own event category
     m.insert("togglegroup", "group toggled");
     m.insert("lockgroups", "groups locked");
     m.insert("moveintogroup", "moved into group");
     m.insert("moveoutofgroup", "moved out of group");
     m.insert("ignoregrouplock", "group lock ignore");
 
-    // Layers
+    // Layers — overlay surfaces (bars, notifications) that sit above tiled windows
     m.insert("openlayer", "layer opened");
     m.insert("closelayer", "layer closed");
 
-    // Input
+    // Input — keyboard layout and keymap state changes
     m.insert("activelayout", "layout changed");
     m.insert("submap", "submap");
 
-    // Misc
+    // Misc — events that don't fit the categories above
     m.insert("screencast", "screencast");
     m.insert("configreloaded", "config reloaded");
     m.insert("bell", "bell");
@@ -71,16 +73,16 @@ static NAME_MAP: LazyLock<HashMap<&'static str, &'static str>> = LazyLock::new(|
     m
 });
 
-/// Formats Hyprland events with human-readable names and parsed data.
-///
-/// Maintains a window-address cache to resolve hex addresses to app names.
+/// Stateless formatting loses context — a bare hex address in a closewindow event
+/// is meaningless without knowing which app it belonged to. The window cache bridges
+/// that gap by remembering openwindow→address associations.
 pub struct EventFormatter {
     window_cache: HashMap<String, String>,
     human_readable: bool,
 }
 
 impl EventFormatter {
-    /// Creates a new formatter with an empty window cache.
+    /// Cache starts empty — it fills up as openwindow events arrive during the session.
     #[must_use]
     pub fn new(human_readable: bool) -> Self {
         Self {
@@ -89,14 +91,12 @@ impl EventFormatter {
         }
     }
 
-    /// Updates internal caches based on the event.
-    ///
-    /// Call this after `format()` for every event to keep the window cache current.
-    /// The listener calls format-then-observe so closewindow can still resolve cached app names.
+    /// Must be called after `format()` — if called before, closewindow would evict the
+    /// address before format has a chance to resolve it. The listener enforces this ordering.
     pub fn observe(&mut self, event: &HyprlandEvent) {
         match event.name.as_str() {
             "openwindow" => {
-                // Format: addr,ws,class,title
+                // Wire format: addr,ws,class,title — we cache addr→class for later lookups
                 let mut fields = event.data.splitn(4, ',');
                 if let (Some(addr), Some(_ws), Some(class)) =
                     (fields.next(), fields.next(), fields.next())
@@ -119,7 +119,8 @@ impl EventFormatter {
         }
     }
 
-    /// Formats an event as a human-readable log message.
+    /// Delegates to raw wire format when human-readable mode is off — lets users choose
+    /// between debuggable output and polished log lines.
     #[must_use]
     pub fn format(&self, event: &HyprlandEvent) -> String {
         if !self.human_readable {
@@ -141,7 +142,7 @@ impl EventFormatter {
 
     fn format_data(&self, event: &HyprlandEvent) -> String {
         match event.name.as_str() {
-            // Window lifecycle
+            // Each event has a unique wire format — dedicated formatters parse it correctly
             "openwindow" => self.format_openwindow(&event.data),
             "closewindow" | "urgent" | "windowtitle" | "activewindowv2" | "moveintogroup"
             | "moveoutofgroup" | "bell" => self.format_address_only(&event.data),
@@ -150,7 +151,7 @@ impl EventFormatter {
             "movewindow" => Self::format_addr_comma_value(&event.data, "ws"),
             "movewindowv2" => Self::format_movewindowv2(&event.data),
 
-            // Window state
+            // Boolean toggle events share the same 0/1 wire format
             "fullscreen" | "lockgroups" | "ignoregrouplock" => {
                 Self::format_bool(&event.data, "enabled")
             }
@@ -158,12 +159,12 @@ impl EventFormatter {
             "minimized" => self.format_addr_bool(&event.data, "minimized"),
             "pin" => self.format_addr_bool(&event.data, "pinned"),
 
-            // Workspace (name only) / monitor (name only)
+            // v1 events carry only a name — no numeric ID available
             "workspace" | "createworkspace" | "destroyworkspace" | "monitoradded"
             | "monitorremoved" => {
                 format!("name={}", event.data)
             }
-            // Workspace v2 (id,name)
+            // v2 events carry both id and name — richer than v1
             "workspacev2" | "createworkspacev2" | "destroyworkspacev2" => {
                 Self::format_id_name(&event.data)
             }
@@ -175,30 +176,30 @@ impl EventFormatter {
             }
             "renameworkspace" => Self::format_csv_kv(&event.data, &["id", "name"]),
 
-            // Monitor
+            // Monitor events vary between v1 (name-only) and v2 (id+name+description)
             "focusedmon" => Self::format_csv_kv(&event.data, &["monitor", "workspace"]),
             "focusedmonv2" => Self::format_csv_kv(&event.data, &["monitor", "id"]),
             "monitoraddedv2" | "monitorremovedv2" => {
                 Self::format_csv_kv(&event.data, &["id", "name", "description"])
             }
 
-            // Groups
+            // Group toggle includes member addresses — count is more useful than raw hex
             "togglegroup" => Self::format_togglegroup(&event.data),
 
-            // Layers
+            // Layer events carry only a namespace string — no further parsing needed
             "openlayer" | "closelayer" => format!("namespace={}", event.data),
 
-            // Input
+            // Keyboard layout switches are comma-separated key,value pairs
             "activelayout" => Self::format_csv_kv(&event.data, &["keyboard", "layout"]),
 
-            // Misc
+            // Screencast has a unique active+owner format unlike other boolean events
             "screencast" => Self::format_screencast(&event.data),
 
             _ => event.data.clone(),
         }
     }
 
-    // --- Formatters ---
+    // --- Per-event parsers — each wire format needs its own split logic ---
 
     fn format_openwindow(&self, data: &str) -> String {
         let mut fields = data.splitn(4, ',');
@@ -220,7 +221,7 @@ impl EventFormatter {
             .map_or_else(|| addr.to_string(), |app| format!("app={app}"))
     }
 
-    /// Formats `addr,value` as `{key}="{value}"` (quoted) or `{key}={value}` for ws.
+    /// Titles may contain commas and spaces — quoting prevents ambiguity in key=value output.
     fn format_addr_comma_value(data: &str, key: &str) -> String {
         match data.split_once(',') {
             Some((_addr, value)) => {
@@ -234,7 +235,7 @@ impl EventFormatter {
         }
     }
 
-    /// Formats `addr,0|1` as `app={cached} {key}={true|false}`.
+    /// Address-prefixed boolean events need both cache lookup and 0/1→true/false translation.
     fn format_addr_bool(&self, data: &str, key: &str) -> String {
         match data.split_once(',') {
             Some((addr, flag)) => {
@@ -265,13 +266,13 @@ impl EventFormatter {
             .map_or_else(|| data.to_string(), |ws_name| format!("ws={ws_name}"))
     }
 
-    /// Formats a single `0|1` as `{key}={true|false}`.
+    /// Hyprland sends 0/1 integers but log readers expect true/false booleans.
     fn format_bool(data: &str, key: &str) -> String {
         let val = if data.trim() == "1" { "true" } else { "false" };
         format!("{key}={val}")
     }
 
-    /// Formats `id,name` as `id={id} name={name}`.
+    /// v2 workspace events always carry id,name — consistent key=value output helps log parsing.
     fn format_id_name(data: &str) -> String {
         match data.split_once(',') {
             Some((id, name)) => format!("id={id} name={name}"),
@@ -279,7 +280,7 @@ impl EventFormatter {
         }
     }
 
-    /// Generic CSV to key=value formatter.
+    /// Many events share the same comma-separated positional format — this avoids duplicating split logic.
     fn format_csv_kv(data: &str, keys: &[&str]) -> String {
         let fields: Vec<&str> = data.splitn(keys.len(), ',').collect();
         keys.iter()
@@ -289,7 +290,7 @@ impl EventFormatter {
             .join(" ")
     }
 
-    /// Formats `0|1,addr1,addr2,...` as `state={opened|closed} windows=N`.
+    /// Raw group data dumps a variable-length address list — window count is more useful than hex addresses.
     fn format_togglegroup(data: &str) -> String {
         if let Some((flag, rest)) = data.split_once(',') {
             let state = if flag.trim() == "1" {
@@ -309,7 +310,7 @@ impl EventFormatter {
         }
     }
 
-    /// Formats `0|1,owner` as `active={true|false} owner={owner}`.
+    /// Screencast events combine a boolean state with the owning application — both matter for debugging screen sharing issues.
     fn format_screencast(data: &str) -> String {
         match data.split_once(',') {
             Some((flag, owner)) => {

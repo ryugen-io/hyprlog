@@ -1,4 +1,6 @@
-//! Hyprland socket2 event listener.
+//! The compositor fires events continuously — this module connects to socket2,
+//! survives disconnects with exponential backoff, and feeds parsed events into the
+//! logger without blocking the main thread.
 
 use super::event::HyprlandEvent;
 use super::formatter::EventFormatter;
@@ -16,21 +18,20 @@ use std::time::Duration;
 use tokio::runtime::Builder;
 use tokio::time;
 
-/// Handle to a running event listener thread.
-///
-/// Drop this handle to signal shutdown and wait for the listener to stop.
+/// Without a handle, there's no way to cleanly stop the background thread —
+/// dropping the handle signals shutdown so the listener doesn't outlive the shell.
 pub struct EventListenerHandle {
     shutdown: Arc<AtomicBool>,
     thread: Option<JoinHandle<()>>,
 }
 
 impl EventListenerHandle {
-    /// Signals the listener to stop.
+    /// Cooperative shutdown — the loop checks this flag between events instead of being killed.
     pub fn stop(&self) {
         self.shutdown.store(true, Ordering::Relaxed);
     }
 
-    /// Signals stop and waits for the listener thread to finish.
+    /// Blocking join ensures the thread has fully exited before the caller proceeds — prevents use-after-free on shared state.
     pub fn join(mut self) {
         self.stop();
         if let Some(handle) = self.thread.take() {
@@ -45,13 +46,9 @@ impl Drop for EventListenerHandle {
     }
 }
 
-/// Runs the event listener loop on the current thread (blocking).
-///
-/// Connects to socket2, reads events line by line, and routes them through the
-/// logger. Reconnects with exponential backoff on disconnect.
-///
-/// Respects `config.ignore_events` to skip unwanted events, and applies
-/// per-event level mapping via `config.event_levels`.
+/// Blocking entry point — the background thread calls this directly. Reconnection with
+/// exponential backoff handles compositor restarts and socket interruptions without
+/// losing the listener permanently.
 pub fn run_event_loop(
     socket_dir: &std::path::Path,
     logger: &Logger,
@@ -119,7 +116,7 @@ async fn run_event_loop_async(
     internal::debug(scope, "Event listener stopped");
 }
 
-/// Processes events from a connected socket2 stream.
+/// Inner loop for a single connection — returns when the socket drops so the outer loop can reconnect.
 async fn process_events(
     mut events: EventStream,
     logger: &Logger,
@@ -137,12 +134,12 @@ async fn process_events(
             Ok(Ok(Some(event))) => {
                 let event = HyprlandEvent::from_sdk(&event);
 
-                // Skip ignored events
+                // User-configured blocklist — high-frequency events like activewindow can flood logs
                 if config.ignore_events.iter().any(|e| e == &event.name) {
                     continue;
                 }
 
-                // If an allowlist filter is set, skip events not in it
+                // Allowlist takes precedence over blocklist — if set, only these events pass through
                 if let Some(ref filter) = config.event_filter
                     && !filter.iter().any(|f| f == &event.name)
                 {
@@ -163,7 +160,7 @@ async fn process_events(
                 break;
             }
             Err(_) => {
-                // Timeout used to periodically check shutdown.
+                // 1-second timeout ensures the shutdown flag is checked even when no events arrive
             }
         }
     }
@@ -243,10 +240,8 @@ fn nth_csv_field(data: &str, n: usize) -> Option<&str> {
     data.split(',').nth(n)
 }
 
-/// Starts the event listener in a background thread.
-///
-/// Returns a handle that can be used to stop the listener, or `None` if the
-/// socket directory cannot be resolved or the thread fails to spawn.
+/// Runs on a dedicated thread so the REPL stays responsive — returns None when
+/// the socket can't be found (Hyprland not running) rather than blocking startup.
 #[must_use]
 pub fn start_listener(logger: Arc<Logger>, config: &HyprlandConfig) -> Option<EventListenerHandle> {
     let socket_dir = socket::resolve_socket_dir(config)?;

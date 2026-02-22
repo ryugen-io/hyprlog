@@ -1,33 +1,34 @@
-//! Auto-highlighting for message content.
+//! Dense log output buries URLs, paths, and numbers in a wall of text.
 //!
-//! Injects XML-style color tags for keywords and patterns before style parsing.
+//! Auto-highlighting injects color tags before the style parser runs so these tokens
+//! stand out without the user manually wrapping every occurrence.
 
 use crate::config::HighlightConfig;
 use regex::Regex;
 use std::sync::LazyLock;
 
-/// Regex pattern for URLs (https://... or http://...).
+/// URLs in logs are often clickable in modern terminals — highlighting them makes them findable.
 static URL_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"https?://[^\s<>]+").expect("Invalid URL regex"));
 
-/// Regex pattern for file paths (/path, ~/path, ./path).
+/// File paths in error messages are the first thing users look for when diagnosing failures.
 static PATH_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?:^|[^<\w])((?:/|~/|\./)[\w./-]+)").expect("Invalid path regex")
 });
 
-/// Regex pattern for quoted strings ("..." or '...').
+/// Quoted strings often contain user input or error messages worth distinguishing from surrounding text.
 static QUOTED_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r#""[^"]*"|'[^']*'"#).expect("Invalid quoted regex"));
 
-/// Regex pattern for numbers (integers and decimals).
+/// Numeric values (ports, counts, durations) are key diagnostic data that blends into prose without color.
 static NUMBER_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\b-?\d+(?:\.\d+)?\b").expect("Invalid number regex"));
 
-/// Regex pattern for existing XML-style tags.
+/// Already-tagged regions must be skipped — double-wrapping would produce nested `<color>` tags that break rendering.
 static EXISTING_TAG_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"<[^>]+>[^<]*</[^>]+>").expect("Invalid tag regex"));
 
-/// A span representing a region in the text.
+/// Overlap detection needs start/end pairs — a tuple would lose semantic clarity.
 #[derive(Debug, Clone, Copy)]
 struct Span {
     start: usize,
@@ -40,7 +41,7 @@ impl Span {
     }
 }
 
-/// A match with its span and color.
+/// Each regex hit needs its position, original text, and target color for the replacement pass.
 #[derive(Debug)]
 struct Match {
     span: Span,
@@ -48,17 +49,8 @@ struct Match {
     color: String,
 }
 
-/// Injects XML-style color tags into a message for auto-highlighting.
-///
-/// This function identifies keywords and patterns (URLs, paths, numbers, quoted strings)
-/// and wraps them in color tags before the style parser processes them.
-///
-/// # Arguments
-/// * `msg` - The message to process.
-/// * `config` - Highlight configuration with keywords and patterns.
-///
-/// # Returns
-/// The message with injected color tags.
+/// Runs before the style parser — wraps URLs, paths, numbers, and keywords in `<color>` tags
+/// so the existing style pipeline renders them without special-case logic.
 pub fn inject_tags(msg: &str, config: &HighlightConfig) -> String {
     if !config.enabled || msg.is_empty() {
         return msg.to_string();
@@ -175,12 +167,12 @@ pub fn inject_tags(msg: &str, config: &HighlightConfig) -> String {
     result
 }
 
-/// Checks if a span overlaps with any span in the list.
+/// Prevents double-tagging regions that are already inside an existing XML tag.
 fn overlaps_any(span: &Span, spans: &[Span]) -> bool {
     spans.iter().any(|s| span.overlaps(s))
 }
 
-/// Checks if a span overlaps with any match in the list.
+/// Lower-priority patterns (numbers) must not re-tag text already claimed by higher-priority patterns (URLs).
 fn overlaps_any_match(span: &Span, matches: &[Match]) -> bool {
     matches.iter().any(|m| span.overlaps(&m.span))
 }

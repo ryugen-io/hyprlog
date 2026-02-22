@@ -1,6 +1,8 @@
-//! Internal logging for hyprlog itself.
+//! Hyprlog's own diagnostic logger — bootstrapped early so config errors and
+//! internal warnings can be reported through the same formatting pipeline.
 //!
-//! hyprlog uses its own Logger for internal messages.
+//! Uses `OnceLock` so the logger is initialized exactly once, even if
+//! multiple entry points (CLI, FFI, tests) race to call `init`.
 
 use crate::config::Config;
 use crate::fmt::IconSet;
@@ -10,9 +12,9 @@ use std::sync::OnceLock;
 
 static INTERNAL_LOGGER: OnceLock<Logger> = OnceLock::new();
 
-/// Initializes the internal logger from config.
+/// Fallback initializer that loads config itself — used when no caller provides one.
 ///
-/// Should be called once at startup. Subsequent calls are ignored.
+/// `OnceLock` guarantees only the first call takes effect; later calls are no-ops.
 pub fn init() {
     let was_init = INTERNAL_LOGGER.get().is_some();
     INTERNAL_LOGGER.get_or_init(|| {
@@ -25,7 +27,7 @@ pub fn init() {
     }
 }
 
-/// Initializes the internal logger with a specific config.
+/// Preferred initializer — reuses the already-loaded config to avoid double I/O.
 pub fn init_with_config(config: &Config) {
     let was_init = INTERNAL_LOGGER.get().is_some();
     INTERNAL_LOGGER.get_or_init(|| build_internal_logger(config));
@@ -84,34 +86,34 @@ fn build_internal_logger(config: &Config) -> Logger {
     builder.build()
 }
 
-/// Logs an internal message.
+/// Pre-init calls silently vanish rather than crashing — safe during early startup.
 fn log(level: Level, scope: &str, msg: &str) {
     if let Some(logger) = INTERNAL_LOGGER.get() {
         logger.log(level, scope, msg);
     }
 }
 
-/// Log internal trace message.
+/// Visible only when internal log level includes Trace — for high-volume instrumentation.
 pub fn trace(scope: &str, msg: &str) {
     log(Level::Trace, scope, msg);
 }
 
-/// Log internal debug message.
+/// Visible only when internal log level includes Debug — for startup and teardown diagnostics.
 pub fn debug(scope: &str, msg: &str) {
     log(Level::Debug, scope, msg);
 }
 
-/// Log internal info message.
+/// Normal operational milestones — config loaded, listener started, etc.
 pub fn info(scope: &str, msg: &str) {
     log(Level::Info, scope, msg);
 }
 
-/// Log internal warning message.
+/// Non-fatal anomalies — missing optional config, deprecated features, etc.
 pub fn warn(scope: &str, msg: &str) {
     log(Level::Warn, scope, msg);
 }
 
-/// Log internal error message.
+/// Unrecoverable failures — I/O errors, invalid state, etc.
 pub fn error(scope: &str, msg: &str) {
     log(Level::Error, scope, msg);
 }

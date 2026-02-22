@@ -1,8 +1,9 @@
-//! Color handling for terminal output.
+//! 256-color palettes can't match Hyprland themes like Catppuccin or Dracula —
+//! 24-bit true color is the minimum fidelity for accurate gradient rendering.
 
 use std::fmt;
 
-/// RGB color for 24-bit true color terminal output.
+/// A dedicated type prevents mixing up raw u8 triples and documents color intent at the type level.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct Color {
     pub r: u8,
@@ -11,15 +12,15 @@ pub struct Color {
 }
 
 impl Color {
-    /// Creates a new color from RGB values.
+    /// `const` so theme palettes and named colors can be compile-time constants.
     #[must_use]
     pub const fn new(r: u8, g: u8, b: u8) -> Self {
         Self { r, g, b }
     }
 
-    /// Creates a color from a hex string (with or without `#` prefix).
-    ///
-    /// Returns white (`#ffffff`) for invalid input.
+    /// Config files specify colors as `#RRGGBB` hex strings — this converts them
+    /// to the numeric triple the ANSI escape builder needs. Falls back to white
+    /// on malformed input so a typo in config doesn't crash rendering.
     #[must_use]
     pub fn from_hex(hex: &str) -> Self {
         let hex = hex.trim_start_matches('#');
@@ -34,19 +35,19 @@ impl Color {
         Self { r, g, b }
     }
 
-    /// Returns the ANSI escape sequence for foreground color.
+    /// Terminals need the raw `\x1b[38;2;R;G;Bm` escape — callers shouldn't hand-build it.
     #[must_use]
     pub fn fg_ansi(self) -> String {
         format!("\x1b[38;2;{};{};{}m", self.r, self.g, self.b)
     }
 
-    /// Returns the ANSI escape sequence for background color.
+    /// Background coloring uses a different SGR code (48 vs 38) — exposing a separate method avoids caller confusion.
     #[must_use]
     pub fn bg_ansi(self) -> String {
         format!("\x1b[48;2;{};{};{}m", self.r, self.g, self.b)
     }
 
-    /// ANSI reset sequence.
+    /// Terminates any active SGR styling so subsequent text returns to the terminal default.
     pub const RESET: &'static str = "\x1b[0m";
 
     #[must_use]
@@ -101,7 +102,7 @@ impl fmt::Display for Color {
     }
 }
 
-/// Colorize a string with foreground color.
+/// Convenience wrapper — most callers just want "make this text colored" without managing reset sequences.
 #[must_use]
 pub fn colorize(text: &str, color: Color) -> String {
     let fg = color.fg_ansi();
@@ -109,7 +110,7 @@ pub fn colorize(text: &str, color: Color) -> String {
     format!("{fg}{text}{reset}")
 }
 
-/// Colorize a string with foreground and background colors.
+/// Badge-style rendering (colored background + contrasting text) needs both FG and BG escapes paired together.
 #[must_use]
 pub fn colorize_bg(text: &str, fg: Color, bg: Color) -> String {
     let fg_code = fg.fg_ansi();

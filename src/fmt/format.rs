@@ -1,8 +1,8 @@
-//! Structure template parsing for log output.
-//!
-//! Templates use placeholders like `{tag}`, `{scope}`, `{msg}`.
+//! Different outputs need different column layouts — terminal may want `{tag} {scope} {msg}`
+//! while file output needs `{timestamp} {tag} {scope} {msg}`. Templates make this user-configurable
+//! instead of hardcoded per backend.
 
-/// Available placeholders in format strings.
+/// Closed set of known substitution tokens — unknown `{names}` pass through as literal text.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Placeholder {
     Tag,
@@ -18,7 +18,7 @@ pub enum Placeholder {
 }
 
 impl Placeholder {
-    /// Returns the placeholder string (without braces).
+    /// Template parsing needs to match brace-delimited names against known placeholders.
     #[must_use]
     pub const fn as_str(self) -> &'static str {
         match self {
@@ -35,7 +35,7 @@ impl Placeholder {
         }
     }
 
-    /// All available placeholders.
+    /// Iteration over all variants avoids forgetting a placeholder when matching by name.
     pub const ALL: &'static [Self] = &[
         Self::Tag,
         Self::Icon,
@@ -50,23 +50,23 @@ impl Placeholder {
     ];
 }
 
-/// A parsed segment of a format string.
+/// Parsing into segments once avoids re-scanning the template on every log line.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FormatSegment {
-    /// Literal text.
+    /// Whitespace, separators, and unknown `{names}` pass through untouched.
     Literal(String),
-    /// A placeholder to be replaced.
+    /// Known tokens are substituted with formatted values at render time.
     Placeholder(Placeholder),
 }
 
-/// A parsed format template.
+/// Pre-parsed template avoids string scanning on every log call — parse once, render many.
 #[derive(Debug, Clone)]
 pub struct FormatTemplate {
     segments: Vec<FormatSegment>,
 }
 
 impl FormatTemplate {
-    /// Parses a format string into a template.
+    /// One-time parse turns `"{tag} {scope} {msg}"` into a segment list for fast repeated rendering.
     #[must_use]
     pub fn parse(template: &str) -> Self {
         let mut segments = Vec::new();
@@ -120,13 +120,13 @@ impl FormatTemplate {
         None
     }
 
-    /// Returns the parsed segments.
+    /// Tests and downstream code need direct access to verify parse results.
     #[must_use]
     pub fn segments(&self) -> &[FormatSegment] {
         &self.segments
     }
 
-    /// Renders the template with provided values.
+    /// Substitutes formatted values into the pre-parsed segments — the hot path for every log line.
     #[must_use]
     pub fn render(&self, values: &FormatValues) -> String {
         let mut result = String::new();
@@ -162,7 +162,7 @@ impl Default for FormatTemplate {
     }
 }
 
-/// Values to substitute into a format template.
+/// Typed value bag ensures every placeholder has a corresponding field — no risk of key typos at runtime.
 #[derive(Debug, Clone, Default)]
 pub struct FormatValues {
     pub tag: String,
@@ -178,62 +178,62 @@ pub struct FormatValues {
 }
 
 impl FormatValues {
-    /// Creates new empty format values.
+    /// Empty defaults let callers set only the fields they need without boilerplate for the rest.
     #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Sets the tag value.
+    /// The `{tag}` placeholder needs a pre-formatted level indicator (e.g., `[INFO]`).
     #[must_use]
     pub fn tag(mut self, tag: impl Into<String>) -> Self {
         self.tag = tag.into();
         self
     }
 
-    /// Sets the icon value.
+    /// The `{icon}` placeholder needs the glyph string for the current level and icon family.
     #[must_use]
     pub fn icon(mut self, icon: impl Into<String>) -> Self {
         self.icon = icon.into();
         self
     }
 
-    /// Sets the scope value.
+    /// The `{scope}` placeholder needs the padded and transformed scope string.
     #[must_use]
     pub fn scope(mut self, scope: impl Into<String>) -> Self {
         self.scope = scope.into();
         self
     }
 
-    /// Sets the message value.
+    /// The `{msg}` placeholder carries the actual log content — the most important part of every line.
     #[must_use]
     pub fn msg(mut self, msg: impl Into<String>) -> Self {
         self.msg = msg.into();
         self
     }
 
-    /// Sets the timestamp value.
+    /// File output needs timestamps for chronological analysis — terminal usually omits them.
     #[must_use]
     pub fn timestamp(mut self, timestamp: impl Into<String>) -> Self {
         self.timestamp = timestamp.into();
         self
     }
 
-    /// Sets the level value.
+    /// Raw level name for templates that need it separately from the formatted tag.
     #[must_use]
     pub fn level(mut self, level: impl Into<String>) -> Self {
         self.level = level.into();
         self
     }
 
-    /// Sets the app value.
+    /// Path templates use `{app}` to organize logs into per-application directories.
     #[must_use]
     pub fn app(mut self, app: impl Into<String>) -> Self {
         self.app = app.into();
         self
     }
 
-    /// Sets date values from year, month, day.
+    /// Path templates use `{year}/{month}/{day}` for date-based log directory hierarchies.
     #[must_use]
     pub fn date(mut self, year: &str, month: &str, day: &str) -> Self {
         self.year = year.to_string();

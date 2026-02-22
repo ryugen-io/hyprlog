@@ -1,17 +1,12 @@
-//! Logger configuration from hyprlog config files.
+//! Manually wiring up builder calls for every config knob is tedious and error-prone —
+//! this module bridges the TOML config structs to the builder API in one place.
 
 use super::{Logger, LoggerBuilder};
 use crate::internal;
 use crate::level::Level;
 
 impl Logger {
-    /// Creates a logger from the default hyprlog config file.
-    ///
-    /// Loads config from `~/.config/hypr/hyprlog.conf` and builds a logger
-    /// with terminal and file outputs as configured.
-    ///
-    /// # Arguments
-    /// * `app_name` - Application name override (used for file paths/logs).
+    /// Convenience entry point — loads config from the standard XDG path so callers don't need to manage config loading themselves.
     #[must_use]
     pub fn from_config(app_name: &str) -> Self {
         internal::debug("LOGGER", "Building logger from config");
@@ -19,13 +14,8 @@ impl Logger {
         Self::from_config_with(&config, app_name)
     }
 
-    /// Creates a logger from a given config.
-    ///
-    /// # Arguments
-    /// * `config` - The hyprlog config to use.
-    /// * `app_name` - Application name override.
-    ///
-    /// This method applies app-specific overrides from `[apps.{app_name}]` sections.
+    /// Takes an already-loaded config to avoid double I/O when the caller has already parsed the TOML.
+    /// Applies `[apps.{app_name}]` overrides so each binary can diverge from global defaults.
     #[must_use]
     pub fn from_config_with(config: &crate::config::Config, app_name: &str) -> Self {
         internal::debug("LOGGER", &format!("Initializing logger for app={app_name}"));
@@ -74,7 +64,7 @@ impl Logger {
         logger
     }
 
-    /// Configures terminal output from config.
+    /// Terminal has the most config knobs (colors, icons, highlight, tag, scope) — isolating its setup keeps `from_config_with` readable.
     fn configure_terminal(builder: LoggerBuilder, config: &crate::config::Config) -> LoggerBuilder {
         internal::debug("TERMINAL", "Configuring terminal output...");
         internal::debug(
@@ -154,7 +144,7 @@ impl Logger {
         terminal.done()
     }
 
-    /// Builds icon set from config.
+    /// Config-defined icon overrides must be applied on top of the base icon family.
     fn build_icon_set(config: &crate::config::Config) -> crate::fmt::IconSet {
         let mut icon_set = match config.parse_icon_type() {
             crate::fmt::IconType::NerdFont => crate::fmt::IconSet::nerdfont(),
@@ -182,7 +172,7 @@ impl Logger {
         icon_set
     }
 
-    /// Builds tag config from config.
+    /// Tag config bridges TOML string values (prefix, suffix, transform) to the typed `TagConfig` struct.
     fn build_tag_config(config: &crate::config::Config) -> crate::fmt::TagConfig {
         let mut tag_config = crate::fmt::TagConfig::new()
             .prefix(&config.tag.prefix)
@@ -205,7 +195,7 @@ impl Logger {
         tag_config
     }
 
-    /// Builds scope config from config.
+    /// Scope config bridges TOML string values (alignment, transform) to the typed `ScopeConfig` struct.
     fn build_scope_config(config: &crate::config::Config) -> crate::fmt::ScopeConfig {
         crate::fmt::ScopeConfig::new()
             .min_width(config.scope.min_width)
@@ -213,7 +203,7 @@ impl Logger {
             .transform(config.parse_scope_transform())
     }
 
-    /// Configures file output from config.
+    /// File output has fewer knobs than terminal — but isolating it keeps the main method clean.
     fn configure_file(
         builder: LoggerBuilder,
         config: &crate::config::Config,
@@ -240,7 +230,7 @@ impl Logger {
             .done()
     }
 
-    /// Configures JSON database output from config.
+    /// JSON output is the simplest backend — just a path and an app name — but still deserves its own helper for consistency.
     fn configure_json(
         builder: LoggerBuilder,
         config: &crate::config::Config,

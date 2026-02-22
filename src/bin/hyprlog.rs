@@ -1,4 +1,6 @@
-//! hyprlog - Log messages from the command line.
+//! Hyprland users expect a single `hyprlog` binary that "just works" —
+//! bare invocation drops into the REPL (matching Hyprland's shell-first convention),
+//! while subcommands support scriptable one-shot operations.
 //!
 //! Usage:
 //!   hyprlog                              Enter interactive shell
@@ -25,7 +27,7 @@ use std::process::ExitCode;
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
 
-    // Load config
+    // Config drives output paths, log level, and formatting — must load before any logger is created
     let config = match Config::load() {
         Ok(c) => c,
         Err(e) => {
@@ -34,10 +36,10 @@ fn main() -> ExitCode {
         }
     };
 
-    // Init internal logging with config
+    // Internal logger must be ready before any command runs so diagnostic messages are captured
     internal::init_with_config(&config);
 
-    // No args = shell mode
+    // Default to the interactive REPL when invoked without arguments (matches Hyprland CLI convention)
     if args.is_empty() {
         return match hyprlog::shell::run(&config) {
             Ok(()) => ExitCode::SUCCESS,
@@ -48,7 +50,7 @@ fn main() -> ExitCode {
         };
     }
 
-    // Build logger for commands
+    // All subcommands share a single logger instance built from config so output is consistent
     let logger = build_logger(&config, None);
     let args_str: Vec<&str> = args.iter().map(String::as_str).collect();
 
@@ -70,9 +72,9 @@ fn main() -> ExitCode {
         "themes" => cmd_themes(&args_str[1..], &logger),
         #[cfg(feature = "hyprland")]
         "watch" => cmd_watch(&args_str[1..], &config, &logger),
-        // Shorthand: hyprlog <level> <scope> <msg>
+        // Allow level-first invocation for quick one-liners without typing "log" subcommand
         "trace" | "debug" | "info" | "warn" | "error" => cmd_log_shorthand(&args_str, &logger),
-        // Shorthand with app: hyprlog <app> <level> <scope> <msg>
+        // Detect app-prefixed shorthand (e.g., `hyprlog myapp info SCOPE msg`) by checking if second arg is a valid level
         _ if args_str.len() >= 2 && parse_level(args_str[1]).is_some() => {
             cmd_log_shorthand(&args_str, &logger)
         }

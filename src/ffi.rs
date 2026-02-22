@@ -1,6 +1,5 @@
-//! C-ABI FFI bindings for hyprlog.
-//!
-//! Provides a stable C interface for logging from C, C++, C#, and other languages.
+//! C-ABI FFI bindings so C, C++, C#, and other languages can log through hyprlog
+//! without linking against the Rust standard library directly.
 
 #![allow(unsafe_code)]
 
@@ -15,14 +14,14 @@ use crate::internal;
 use crate::level::Level;
 use crate::logger::Logger;
 
-/// Log level constants for FFI.
+/// Named constants so FFI callers avoid magic numbers in their log calls.
 pub const HYPRLOG_LEVEL_TRACE: c_int = 0;
 pub const HYPRLOG_LEVEL_DEBUG: c_int = 1;
 pub const HYPRLOG_LEVEL_INFO: c_int = 2;
 pub const HYPRLOG_LEVEL_WARN: c_int = 3;
 pub const HYPRLOG_LEVEL_ERROR: c_int = 4;
 
-/// Opaque context holding the logger and error state.
+/// Opaque pointer for C callers — hides the Rust Logger behind a stable ABI boundary.
 pub struct HyprlogContext {
     logger: Logger,
     last_error: RefCell<Option<String>>,
@@ -38,7 +37,7 @@ impl HyprlogContext {
     }
 }
 
-/// Converts a C int to a Level enum.
+/// Maps the C-side integer constants back to the Rust enum for dispatch.
 const fn level_from_int(level: c_int) -> Level {
     match level {
         0 => Level::Trace,
@@ -49,7 +48,7 @@ const fn level_from_int(level: c_int) -> Level {
     }
 }
 
-/// Builds a logger from a Config.
+/// Mirrors the CLI logger construction but scoped to the FFI caller's config.
 fn build_logger(config: &Config) -> Logger {
     let mut builder = Logger::builder().level(config.parse_level());
 
@@ -81,10 +80,7 @@ fn build_logger(config: &Config) -> Logger {
 // Initialization
 // ============================================================================
 
-/// Creates a new hyprlog context with default configuration.
-///
-/// Loads config from `~/.config/hypr/hyprlog.conf` if present,
-/// otherwise uses defaults.
+/// Simplest entry point for C callers — loads the user's config or falls back to defaults.
 ///
 /// Returns `NULL` on failure. Use `hyprlog_get_last_error` to retrieve error.
 #[unsafe(no_mangle)]
@@ -101,7 +97,7 @@ pub extern "C" fn hyprlog_init() -> *mut HyprlogContext {
     Box::into_raw(ctx)
 }
 
-/// Creates a new hyprlog context with configuration from the specified path.
+/// Allows C callers to point at a non-standard config file (e.g., for testing or embedding).
 ///
 /// # Safety
 /// `config_path` must be a valid null-terminated UTF-8 string or `NULL`.
@@ -137,10 +133,7 @@ pub unsafe extern "C" fn hyprlog_init_with_config(
     Box::into_raw(ctx)
 }
 
-/// Creates a logger with default config but custom app name.
-///
-/// Loads config from `~/.config/hypr/hyprlog.conf` if present,
-/// but uses the provided `app_name` for file logging paths.
+/// Uses the global config but routes file logs into an app-specific subdirectory.
 ///
 /// # Safety
 /// `app_name` must be a valid null-terminated UTF-8 string.
@@ -169,9 +162,7 @@ pub unsafe extern "C" fn hyprlog_init_with_app(app_name: *const c_char) -> *mut 
     Box::into_raw(ctx)
 }
 
-/// Creates a minimal logger with only terminal output (no config file).
-///
-/// Useful for quick setup without configuration.
+/// Bypasses config entirely for callers that just need quick terminal logging.
 ///
 /// # Arguments
 /// * `level` - Minimum log level (0=trace, 1=debug, 2=info, 3=warn, 4=error)
@@ -193,7 +184,7 @@ pub extern "C" fn hyprlog_init_simple(level: c_int, colors: c_int) -> *mut Hyprl
     Box::into_raw(ctx)
 }
 
-/// Frees a hyprlog context.
+/// Releases the heap-allocated context — must be called to avoid leaking memory.
 ///
 /// # Safety
 /// `ctx` must be a valid pointer returned by `hyprlog_init*` or `NULL`.
@@ -210,7 +201,7 @@ pub unsafe extern "C" fn hyprlog_free(ctx: *mut HyprlogContext) {
 // Logging
 // ============================================================================
 
-/// Logs a message at the specified level.
+/// Core logging function — all level-specific wrappers delegate here.
 ///
 /// # Safety
 /// - `ctx` must be a valid context pointer
@@ -251,7 +242,7 @@ pub unsafe extern "C" fn hyprlog_log(
         .log(level_from_int(level), scope_str, msg_str);
 }
 
-/// Logs a trace message.
+/// Convenience wrapper — avoids passing the level constant for every trace call.
 ///
 /// # Safety
 /// See `hyprlog_log`.
@@ -265,7 +256,7 @@ pub unsafe extern "C" fn hyprlog_trace(
     unsafe { hyprlog_log(ctx, HYPRLOG_LEVEL_TRACE, scope, msg) };
 }
 
-/// Logs a debug message.
+/// Convenience wrapper — avoids passing the level constant for every debug call.
 ///
 /// # Safety
 /// See `hyprlog_log`.
@@ -279,7 +270,7 @@ pub unsafe extern "C" fn hyprlog_debug(
     unsafe { hyprlog_log(ctx, HYPRLOG_LEVEL_DEBUG, scope, msg) };
 }
 
-/// Logs an info message.
+/// Convenience wrapper — avoids passing the level constant for every info call.
 ///
 /// # Safety
 /// See `hyprlog_log`.
@@ -293,7 +284,7 @@ pub unsafe extern "C" fn hyprlog_info(
     unsafe { hyprlog_log(ctx, HYPRLOG_LEVEL_INFO, scope, msg) };
 }
 
-/// Logs a warning message.
+/// Convenience wrapper — avoids passing the level constant for every warn call.
 ///
 /// # Safety
 /// See `hyprlog_log`.
@@ -307,7 +298,7 @@ pub unsafe extern "C" fn hyprlog_warn(
     unsafe { hyprlog_log(ctx, HYPRLOG_LEVEL_WARN, scope, msg) };
 }
 
-/// Logs an error message.
+/// Convenience wrapper — avoids passing the level constant for every error call.
 ///
 /// # Safety
 /// See `hyprlog_log`.
@@ -325,7 +316,7 @@ pub unsafe extern "C" fn hyprlog_error(
 // Error Handling
 // ============================================================================
 
-/// Retrieves the last error message.
+/// Copies the last error into a caller-owned buffer — the C-side error reporting pattern.
 ///
 /// # Safety
 /// - `ctx` must be a valid context pointer
@@ -369,7 +360,7 @@ pub unsafe extern "C" fn hyprlog_get_last_error(
     }
 }
 
-/// Flushes all log outputs.
+/// Forces all buffered output to disk/terminal — call before program exit to avoid lost logs.
 ///
 /// # Safety
 /// `ctx` must be a valid context pointer.

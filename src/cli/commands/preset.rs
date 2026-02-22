@@ -1,4 +1,5 @@
-//! Preset command implementations.
+//! Thin CLI wrappers around `PresetRunner` — the actual logic lives in `cli::preset`
+//! so the REPL can reuse it without depending on `ExitCode` or CLI arg parsing.
 
 use crate::cli::preset::PresetRunner;
 use crate::config::Config;
@@ -6,7 +7,7 @@ use crate::internal;
 use crate::logger::Logger;
 use std::process::ExitCode;
 
-/// Handles `hyprlog preset <name>`.
+/// Delegates to `PresetRunner` — the CLI layer only handles arg validation and exit codes.
 #[must_use]
 pub fn cmd_preset(args: &[&str], config: &Config, logger: &Logger) -> ExitCode {
     if args.is_empty() {
@@ -23,7 +24,7 @@ pub fn cmd_preset(args: &[&str], config: &Config, logger: &Logger) -> ExitCode {
     }
 }
 
-/// Handles `hyprlog presets` to list all presets.
+/// Groups presets by app name so multi-app configs are scannable — flat lists become unreadable past ~10 presets.
 #[must_use]
 pub fn cmd_presets(config: &Config, logger: &Logger) -> ExitCode {
     let runner = PresetRunner::new(config, logger);

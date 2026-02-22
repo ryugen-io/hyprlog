@@ -1,18 +1,15 @@
-//! Event-to-log-level mapping for Hyprland events.
+//! Not all Hyprland events deserve the same severity — window lifecycle is Info,
+//! focus changes are Debug, and `urgent` is Warn. Users can override any mapping.
 
 use crate::level::Level;
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
-/// Cached default level map (built once).
+/// Built once at first access — avoids reconstructing the map on every event.
 static DEFAULT_LEVELS: LazyLock<HashMap<&'static str, Level>> = LazyLock::new(default_level_map);
 
-/// Returns the default event name to log level mapping.
-///
-/// Categorizes Hyprland events by their significance:
-/// - **Info**: Window/workspace lifecycle events (user-visible actions)
-/// - **Debug**: Focus changes, layout updates, config reloads (high-frequency)
-/// - **Warn**: Events requiring attention (urgent flag)
+/// Sensible defaults so events log at appropriate severity without per-event config.
+/// Info for user-visible actions, Debug for high-frequency noise, Warn for urgent.
 #[must_use]
 pub fn default_level_map() -> HashMap<&'static str, Level> {
     let mut map = HashMap::new();
@@ -57,9 +54,8 @@ pub fn default_level_map() -> HashMap<&'static str, Level> {
     map
 }
 
-/// Resolves the log level for an event.
-///
-/// Priority: user overrides (from config) > default map > fallback (Info).
+/// User overrides take priority over defaults — unknown events fall back to Info
+/// since most custom events represent normal operational activity.
 #[must_use]
 pub fn resolve_level<S: ::std::hash::BuildHasher>(
     event_name: &str,

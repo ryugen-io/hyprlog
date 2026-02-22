@@ -1,14 +1,13 @@
-//! Utility functions for the CLI.
+//! CLI commands share common operations (level parsing, path expansion, logger construction) —
+//! centralizing them here avoids duplicating the same logic across every subcommand handler.
 
 use crate::config::Config;
 use crate::level::Level;
 use crate::logger::Logger;
 use std::path::PathBuf;
 
-/// Parses a level string to a Level enum.
-///
-/// Only accepts the canonical names (trace, debug, info, warn, error).
-/// Case-insensitive.
+/// User input comes as free-form strings — this validates against the canonical
+/// level names and normalizes case so "INFO" and "info" both work.
 #[must_use]
 pub fn parse_level(s: &str) -> Option<Level> {
     match s.to_lowercase().as_str() {
@@ -21,7 +20,7 @@ pub fn parse_level(s: &str) -> Option<Level> {
     }
 }
 
-/// Expands a path with tilde to the user's home directory.
+/// Config files use `~/` for portability — but Rust's `PathBuf` doesn't resolve tildes natively.
 #[must_use]
 pub fn expand_path(path: &str) -> PathBuf {
     if path.starts_with('~')
@@ -32,16 +31,18 @@ pub fn expand_path(path: &str) -> PathBuf {
     PathBuf::from(path)
 }
 
-/// Builds a logger from config with optional app name override.
+/// Every CLI entry point needs a configured logger.
 ///
-/// If no override is given, the app name is auto-detected from the binary name.
+/// This centralizes the config-to-logger wiring so subcommands don't each reinvent it.
+/// Auto-detection from argv[0] provides a sensible default when no explicit app name is given.
 #[must_use]
 pub fn build_logger(config: &Config, app_override: Option<&str>) -> Logger {
     let app_name = app_override.map_or_else(detect_binary_name, ToString::to_string);
     Logger::from_config_with(config, &app_name)
 }
 
-/// Detects the current binary name from `argv[0]`.
+/// When no app name is explicitly passed, the binary name is the best guess — avoids
+/// hard-coding "hyprlog" which would be wrong for renamed or symlinked binaries.
 fn detect_binary_name() -> String {
     std::env::args()
         .next()
@@ -54,7 +55,8 @@ fn detect_binary_name() -> String {
         )
 }
 
-/// Prints the help message.
+/// Manual help text complements Clap's auto-generated output with examples and config
+/// snippets that Clap's derive macros can't express.
 pub fn print_help() {
     let hyprland_help = if cfg!(feature = "hyprland") {
         "\n  hyprlog watch [options]                  Listen for Hyprland events\

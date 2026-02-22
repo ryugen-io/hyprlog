@@ -1,4 +1,5 @@
-//! JSON log command implementation.
+//! Programs that already emit structured JSON shouldn't need to decompose it into
+//! positional args — piping JSONL directly into hyprlog is faster and less error-prone.
 
 use crate::cli::util::parse_level;
 use crate::internal;
@@ -7,7 +8,7 @@ use serde::Deserialize;
 use std::io::{self, BufRead};
 use std::process::ExitCode;
 
-/// JSON log entry format.
+/// Minimal required fields — anything beyond level/scope/msg would break compatibility with simple JSON producers.
 #[derive(Debug, Deserialize)]
 struct JsonLogEntry {
     level: String,
@@ -15,7 +16,7 @@ struct JsonLogEntry {
     msg: String,
 }
 
-/// Handles `hyprlog json [<json>]`.
+/// Accepts a single JSON string or reads JSONL from stdin — supports both one-shot and piped workflows.
 #[must_use]
 pub fn cmd_json(input: Option<&str>, logger: &Logger) -> ExitCode {
     let mut processed = 0u64;

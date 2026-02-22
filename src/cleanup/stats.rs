@@ -1,29 +1,28 @@
-//! Log file statistics types.
+//! The stats command needs structured data to display — these types
+//! carry the metadata from filesystem scan to CLI rendering.
 
 use super::format_size;
 use crate::logger::Logger;
 use chrono::NaiveDate;
 
-/// Statistics about log files.
+/// Cleanup and stats both need the same directory scan, so this carries the shared result.
 #[derive(Debug, Default)]
 pub struct LogStats {
-    /// Total number of log files.
+    /// Count of discovered `.log` files — shown as the headline stat.
     pub total_files: usize,
-    /// Total size in bytes.
+    /// Combined byte size of all files — used to gauge disk pressure.
     pub total_size: u64,
-    /// Oldest file path.
+    /// Path to the file with the highest age — shows how far back retention reaches.
     pub oldest_file: Option<String>,
-    /// Newest file path.
+    /// Path to the most recently modified file — confirms logging is still active.
     pub newest_file: Option<String>,
-    /// Files with (path, size, `age_days`).
+    /// Per-file metadata for the detailed file listing.
     pub files: Vec<LogFileInfo>,
 }
 
 impl LogStats {
-    /// Prints the statistics using the provided logger.
-    ///
-    /// Uses `print()` to bypass level filtering - command output should
-    /// always be visible regardless of configured log level.
+    /// Uses `print()` to bypass level filtering — command output should always
+    /// be visible regardless of the configured minimum log level.
     pub fn log(&self, logger: &Logger) {
         logger.print("STATS", &format!("Total files: {}", self.total_files));
         logger.print(
@@ -59,15 +58,15 @@ impl LogStats {
     }
 }
 
-/// Information about a log file.
+/// Cleanup and stats both need the same per-file metadata, so one struct serves both.
 #[derive(Debug, Clone)]
 pub struct LogFileInfo {
-    /// File path.
+    /// Absolute path — serves as the unique identity for protection and dedup checks.
     pub path: String,
-    /// File size in bytes.
+    /// Byte size on disk — compared against `max_total_size` for eviction.
     pub size: u64,
-    /// Age in days.
+    /// Days since last modification — compared against `max_age_days` for expiry.
     pub age_days: u64,
-    /// Modification date.
+    /// Calendar date of last modification — used by `before_date`/`after_date` filters.
     pub modified_date: Option<NaiveDate>,
 }

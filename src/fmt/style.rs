@@ -1,29 +1,28 @@
-//! Inline message styling with XML-like tags.
-//!
-//! Supports tags like `<bold>text</bold>` and `<red>text</red>`.
+//! Log messages sometimes need emphasis on specific words — XML-like tags (`<bold>`, `<red>`)
+//! let users embed styling intent without coupling to ANSI escape codes directly.
 
 use super::Color;
 use std::collections::HashMap;
 
-/// A styled segment of text.
+/// Parsed segments separate content from style so the same message can render with ANSI or as plain text.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Segment {
-    /// Plain text without styling.
+    /// Text outside any tag needs no ANSI wrapping — rendering it as-is avoids unnecessary escapes.
     Plain(String),
-    /// Bold text.
+    /// Bold draws the eye to critical keywords in a log line.
     Bold(String),
-    /// Dimmed text.
+    /// Dim de-emphasizes low-priority metadata so it doesn't compete with the message.
     Dim(String),
-    /// Italic text.
+    /// Italic distinguishes quoted or secondary information from the primary message.
     Italic(String),
-    /// Underlined text.
+    /// Underline marks actionable items (URLs, paths) that a user might click or copy.
     Underline(String),
-    /// Colored text (named color or hex).
+    /// Color tags reference named theme colors or raw hex — decouples styling from ANSI codes.
     Colored(String, String),
 }
 
 impl Segment {
-    /// Returns the inner text without styling.
+    /// File output and width calculations need the raw text without ANSI escapes inflating the length.
     #[must_use]
     pub fn text(&self) -> &str {
         match self {
@@ -36,7 +35,7 @@ impl Segment {
         }
     }
 
-    /// Renders the segment with ANSI escape codes.
+    /// Terminal output needs ANSI wrapping — color names are resolved against the active theme map.
     #[must_use]
     pub fn render(&self, colors: &HashMap<String, Color>) -> String {
         match self {
@@ -57,16 +56,15 @@ impl Segment {
         }
     }
 
-    /// Returns plain text without any ANSI codes.
+    /// File and JSON outputs must strip ANSI — they need the text content only.
     #[must_use]
     pub fn render_plain(&self) -> String {
         self.text().to_string()
     }
 }
 
-/// Parses a message string into styled segments.
-///
-/// Supports: `<bold>`, `<dim>`, `<italic>`, `<underline>`, and any color name.
+/// Splitting the message into typed segments before rendering lets the same parse result
+/// serve both ANSI-capable and plain-text outputs without re-parsing.
 #[must_use]
 pub fn parse(msg: &str) -> Vec<Segment> {
     let mut segments = Vec::new();
@@ -125,20 +123,20 @@ fn find_char(bytes: &[u8], start: usize, c: u8) -> Option<usize> {
         .map(|p| start + p)
 }
 
-/// Renders parsed segments to a styled string.
+/// Terminal output needs the full ANSI rendering — this is the styled counterpart of `render_plain`.
 #[must_use]
 #[allow(clippy::implicit_hasher)]
 pub fn render(segments: &[Segment], colors: &HashMap<String, Color>) -> String {
     segments.iter().map(|s| s.render(colors)).collect()
 }
 
-/// Renders parsed segments to plain text (strips all styling).
+/// File output and JSON need clean text — ANSI escapes would corrupt structured data.
 #[must_use]
 pub fn render_plain(segments: &[Segment]) -> String {
     segments.iter().map(Segment::render_plain).collect()
 }
 
-/// Strips all XML-like tags from a message, returning plain text.
+/// Convenience shortcut — callers who only need plain text shouldn't have to manage intermediate segments.
 #[must_use]
 pub fn strip_tags(msg: &str) -> String {
     render_plain(&parse(msg))

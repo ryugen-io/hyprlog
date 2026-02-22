@@ -1,25 +1,26 @@
-//! Unified error type for all hyprlog operations.
+//! Without a unified error type, every caller would need to handle `io::Error`,
+//! `toml::de::Error`, and hyprlog-specific failures separately.
 
 use std::path::PathBuf;
 
-/// Error type for hyprlog operations.
+/// Avoids boxing and lets callers `?`-propagate any hyprlog failure through one type.
 #[derive(Debug)]
 pub enum Error {
-    /// I/O error.
+    /// File output, socket connections, and directory walks all produce `io::Error`.
     Io(std::io::Error),
-    /// TOML config parsing error.
+    /// Config loading can fail on bad TOML syntax or missing required fields.
     ConfigParse(toml::de::Error),
-    /// Config directory not found.
+    /// Some platforms (containers, CI) don't set $HOME or XDG dirs.
     ConfigDirNotFound,
-    /// Cyclic include detected in config sources.
+    /// `source = "..."` chains can accidentally form loops without cycle detection.
     CyclicInclude(PathBuf),
-    /// Format/serialization error.
+    /// Template rendering or JSON serialization can fail on malformed input.
     Format(String),
-    /// Invalid path.
+    /// User-supplied paths from config or CLI may not exist or be accessible.
     InvalidPath(String),
-    /// Preset not found.
+    /// Users can typo preset names in CLI invocations.
     PresetNotFound(String),
-    /// Invalid log level string.
+    /// Preset configs reference level strings that may not map to a valid severity.
     InvalidLevel(String),
 }
 

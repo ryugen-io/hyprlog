@@ -1,33 +1,34 @@
-//! Cleanup operation result types.
+//! Tracks outcomes of cleanup runs — split into actual vs dry-run results
+//! so callers can report, undo, or preview without separate code paths.
 
 use super::format_size;
 use crate::logger::Logger;
 
-/// Result of a cleanup operation.
+/// The CLI needs structured data to show users what happened (or would happen in dry-run).
 #[derive(Debug, Default)]
 pub struct CleanupResult {
-    /// Files that were deleted.
+    /// Successfully removed files (used for reporting and potential undo tracking).
     pub deleted: Vec<String>,
-    /// Bytes freed.
+    /// Users want to know how much disk they recovered.
     pub freed: u64,
-    /// Files that would be deleted (dry run).
+    /// Dry run needs its own list because actual deletion hasn't happened.
     pub would_delete: Vec<String>,
-    /// Bytes that would be freed (dry run).
+    /// Dry run estimate so users can decide before committing.
     pub would_free: u64,
-    /// Files that were compressed.
+    /// Compression is tracked separately because it reclaims less space than deletion.
     pub compressed: Vec<String>,
-    /// Bytes saved by compression.
+    /// Users want to see compression savings separately from deletion savings.
     pub compressed_saved: u64,
-    /// Files that would be compressed (dry run).
+    /// Dry run needs its own compression list because no .gz files were created yet.
     pub would_compress: Vec<String>,
-    /// Bytes that would be saved (dry run estimate).
+    /// Rough estimate since actual compression ratio depends on content.
     pub would_compress_save: u64,
-    /// Files that failed to process (path, error message).
+    /// Files that could not be processed, with the reason (for error reporting).
     pub failed: Vec<(String, String)>,
 }
 
 impl CleanupResult {
-    /// Returns the number of files deleted.
+    /// Unifies actual and dry-run counts so callers don't need to branch on mode.
     #[must_use]
     pub const fn count(&self) -> usize {
         if self.deleted.is_empty() {
@@ -37,7 +38,7 @@ impl CleanupResult {
         }
     }
 
-    /// Returns the bytes freed by deletion.
+    /// Unifies actual and dry-run byte counts so callers don't need to branch on mode.
     #[must_use]
     pub const fn bytes(&self) -> u64 {
         if self.freed == 0 {
@@ -47,7 +48,7 @@ impl CleanupResult {
         }
     }
 
-    /// Returns the number of files compressed.
+    /// Unifies actual and dry-run compression counts.
     #[must_use]
     pub const fn compressed_count(&self) -> usize {
         if self.compressed.is_empty() {
@@ -57,7 +58,7 @@ impl CleanupResult {
         }
     }
 
-    /// Returns the bytes saved by compression.
+    /// Unifies actual and dry-run compression byte savings.
     #[must_use]
     pub const fn compressed_bytes(&self) -> u64 {
         if self.compressed_saved == 0 {
@@ -67,7 +68,7 @@ impl CleanupResult {
         }
     }
 
-    /// Logs the cleanup result using the provided logger.
+    /// Users need confirmation of what the cleanup did (or would do).
     pub fn log(&self, logger: &Logger, dry_run: bool) {
         let has_output = if dry_run {
             self.log_dry_run(logger)

@@ -1,18 +1,15 @@
-//! Hyprland Unix socket path resolution.
+//! Hyprland can run multiple instances with different runtime directories —
+//! finding the right socket requires a priority chain of config overrides,
+//! instance signatures, and discovery fallbacks.
 
 use crate::config::HyprlandConfig;
 use crate::internal;
 use hypr_sdk::ipc::instance;
 use std::path::{Path, PathBuf};
 
-/// Resolves the Hyprland socket directory.
-///
-/// Priority:
-/// 1. `config.socket_dir` (explicit override)
-/// 2. `config.instance_signature`
-/// 3. `hypr-sdk` current instance / discovery fallback
-///
-/// Logs errors directly through hyprlog and returns `None` on failure.
+/// Explicit overrides take priority because containers and custom setups may not follow
+/// standard runtime directory conventions. The fallback chain ensures zero-config works
+/// for the common single-instance case while still supporting multi-instance setups.
 #[must_use]
 pub fn resolve_socket_dir(config: &HyprlandConfig) -> Option<PathBuf> {
     let scope = config.scope.as_str();
@@ -69,7 +66,7 @@ fn resolve_instance_signature(config: &HyprlandConfig) -> Option<String> {
     None
 }
 
-/// Returns the path to socket2 (event socket).
+/// Socket2 is the event stream socket — socket1 is for commands, which hyprlog doesn't need.
 #[must_use]
 pub fn socket2_path(socket_dir: &Path) -> PathBuf {
     socket_dir.join(".socket2.sock")

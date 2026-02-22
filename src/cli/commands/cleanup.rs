@@ -1,4 +1,5 @@
-//! Cleanup command implementation.
+//! Log directories grow without bound — this command applies retention policies
+//! (age, size, count) so users don't have to write cron scripts or remember `find -delete`.
 
 use crate::cleanup::{CleanupOptions, cleanup};
 use crate::cli::util::expand_path;
@@ -7,7 +8,8 @@ use crate::internal;
 use crate::logger::Logger;
 use std::process::ExitCode;
 
-/// Handles `hyprlog cleanup [options]`.
+/// Merges config defaults with CLI overrides — CLI flags always win so one-off runs
+/// can deviate from the persistent config without editing it.
 #[must_use]
 pub fn cmd_cleanup(args: &[&str], config: &Config, logger: &Logger) -> ExitCode {
     let dry_run = args.contains(&"--dry-run");
@@ -24,7 +26,7 @@ pub fn cmd_cleanup(args: &[&str], config: &Config, logger: &Logger) -> ExitCode 
         .delete_all(all)
         .compress(compress);
 
-    // Apply config defaults first
+    // Config provides baseline retention policy — CLI flags override below
     if let Some(days) = config.cleanup.max_age_days {
         internal::debug("CLEANUP", &format!("Config: max_age_days={days}"));
         options = options.max_age_days(days);
@@ -38,7 +40,7 @@ pub fn cmd_cleanup(args: &[&str], config: &Config, logger: &Logger) -> ExitCode 
         options = options.keep_last(keep);
     }
 
-    // CLI overrides config
+    // CLI flags take precedence — one-off runs shouldn't require editing the config file
     if let Some(idx) = args.iter().position(|&a| a == "--older-than")
         && let Some(days_str) = args.get(idx + 1)
         && let Ok(days) = days_str.trim_end_matches('d').parse::<u32>()
@@ -104,7 +106,7 @@ pub fn cmd_cleanup(args: &[&str], config: &Config, logger: &Logger) -> ExitCode 
 
     match cleanup(&base_dir, &options) {
         Ok(result) => {
-            // Log failures
+            // Individual file failures shouldn't abort the whole cleanup — warn and continue
             for (path, err) in &result.failed {
                 internal::warn("CLEANUP", &format!("Failed to process {path}: {err}"));
             }

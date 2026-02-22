@@ -1,4 +1,6 @@
-//! Main logger struct with builder pattern.
+//! Direct construction would require knowing every output's internals — the builder
+//! hides that behind a stepwise API, and the resulting Logger fans out each record
+//! to all configured outputs.
 
 mod builder;
 mod from_config;
@@ -14,7 +16,7 @@ use crate::level::Level;
 use crate::output::{LogRecord, Output};
 use std::collections::HashMap;
 
-/// The main logger.
+/// Immutable after build — guarantees thread-safe concurrent logging without locks.
 #[derive(Default)]
 pub struct Logger {
     min_level: Level,
@@ -24,13 +26,13 @@ pub struct Logger {
 }
 
 impl Logger {
-    /// Creates a new logger builder.
+    /// Direct construction would expose output internals — the builder provides a guided API instead.
     #[must_use]
     pub fn builder() -> LoggerBuilder {
         LoggerBuilder::new()
     }
 
-    /// Logs a message at the given level.
+    /// Core dispatch — filters by severity, then fans out to all configured outputs.
     pub fn log(&self, level: Level, scope: &str, msg: &str) {
         if level < self.min_level {
             return;
@@ -51,7 +53,7 @@ impl Logger {
         }
     }
 
-    /// Logs a message with a custom label override.
+    /// Presets and custom events use domain-specific labels ("SUCCESS", "DEPLOY") instead of built-in level names.
     pub fn log_with_label(&self, level: Level, scope: &str, msg: &str, label: &str) {
         if level < self.min_level {
             return;
@@ -72,7 +74,7 @@ impl Logger {
         }
     }
 
-    /// Logs a message with full control options, including app name override.
+    /// Presets can target a different app's log directory — the app name must be overridable per call.
     pub fn log_full(&self, level: Level, scope: &str, msg: &str, app_name: Option<&str>) {
         if level < self.min_level {
             return;
@@ -95,36 +97,33 @@ impl Logger {
         }
     }
 
-    /// Logs a trace message.
+    /// High-volume instrumentation that should vanish in production builds.
     pub fn trace(&self, scope: &str, msg: &str) {
         self.log(Level::Trace, scope, msg);
     }
 
-    /// Logs a debug message.
+    /// Development-time diagnostics that are too noisy for normal operation.
     pub fn debug(&self, scope: &str, msg: &str) {
         self.log(Level::Debug, scope, msg);
     }
 
-    /// Logs an info message.
+    /// Normal operational milestones — config loaded, listener started, etc.
     pub fn info(&self, scope: &str, msg: &str) {
         self.log(Level::Info, scope, msg);
     }
 
-    /// Logs a warning message.
+    /// Non-fatal anomalies — missing optional config, deprecated features, recoverable errors.
     pub fn warn(&self, scope: &str, msg: &str) {
         self.log(Level::Warn, scope, msg);
     }
 
-    /// Logs an error message.
+    /// Unrecoverable failures — I/O errors, invalid state, broken invariants.
     pub fn error(&self, scope: &str, msg: &str) {
         self.log(Level::Error, scope, msg);
     }
 
-    /// Prints a message that bypasses level filtering.
-    ///
-    /// Use this for command output (stats, themes, etc.) that should always be
-    /// visible regardless of the configured log level. Formats like INFO but
-    /// ignores `min_level`.
+    /// Command output (stats, themes, cleanup results) must always be visible —
+    /// level filtering would hide the results the user explicitly asked for.
     pub fn print(&self, scope: &str, msg: &str) {
         let record = LogRecord {
             level: Level::Info,
@@ -141,9 +140,7 @@ impl Logger {
         }
     }
 
-    /// Outputs raw text without log formatting (no tag, icon, scope).
-    ///
-    /// Useful for list items, continuation lines, etc. where log prefixes would be noisy.
+    /// List items and continuation lines would look broken with repeated `[INFO] SCOPE` prefixes.
     pub fn raw(&self, msg: &str) {
         let record = LogRecord {
             level: Level::Info,
@@ -160,7 +157,7 @@ impl Logger {
         }
     }
 
-    /// Logs a message using a preset.
+    /// Presets avoid retyping level, scope, and text for repetitive log messages (startup, shutdown, deploy).
     #[must_use]
     pub fn preset(&self, name: &str) -> bool {
         let Some(preset) = self.presets.get(name) else {
@@ -175,22 +172,22 @@ impl Logger {
         true
     }
 
-    /// Checks if a preset exists.
+    /// Callers may want to validate a preset name before attempting to use it.
     #[must_use]
     pub fn has_preset(&self, name: &str) -> bool {
         self.presets.contains_key(name)
     }
 
-    /// Returns the number of presets.
+    /// CLI help and diagnostics need to report how many presets are loaded.
     #[must_use]
     pub fn preset_count(&self) -> usize {
         self.presets.len()
     }
 
-    /// Flushes all outputs.
+    /// Buffered outputs (file, JSON) may lose tail data on abrupt exit without an explicit flush.
     ///
     /// # Errors
-    /// Returns the first error encountered.
+    /// Returns the first I/O error encountered across all outputs.
     pub fn flush(&self) -> Result<(), crate::Error> {
         for output in &self.outputs {
             output.flush()?;
@@ -198,13 +195,13 @@ impl Logger {
         Ok(())
     }
 
-    /// Returns the minimum log level.
+    /// Tests and diagnostics need to verify which severity threshold is active.
     #[must_use]
     pub const fn min_level(&self) -> Level {
         self.min_level
     }
 
-    /// Returns the number of outputs.
+    /// Tests verify the builder wired up the expected number of backends.
     #[must_use]
     pub fn output_count(&self) -> usize {
         self.outputs.len()
