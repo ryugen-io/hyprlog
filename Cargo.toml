@@ -41,6 +41,7 @@ serde_json = "1"
 shellexpand = "3"
 toml = "0.8"
 ulid = "1"
+hypr-conf = { git = "https://github.com/ryugen-io/hypr-conf.git", branch = "main" }
 hypr-sdk = { git = "https://github.com/ryugen-io/hypr-sdk.git", branch = "main", default-features = false, optional = true }
 tokio = { version = "1", features = ["rt", "time"], optional = true }
 

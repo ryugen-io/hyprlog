@@ -14,10 +14,18 @@ pub use structs::{
 use crate::fmt::{Alignment, Color, IconType, Transform};
 use crate::internal;
 use crate::level::Level;
+use hypr_conf::{ConfigMetaSpec, resolve_config_path_strict};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
+
+const TYPE_VALUE: &str = "logging";
+const CONFIG_EXTENSIONS: &[&str] = &["conf"];
+
+fn config_meta_spec() -> ConfigMetaSpec<'static> {
+    ConfigMetaSpec::for_type(TYPE_VALUE, CONFIG_EXTENSIONS)
+}
 
 /// A completely empty config file must still produce a working logger — `#[serde(default)]`
 /// on every field ensures zero-config works out of the box.
@@ -224,9 +232,22 @@ impl Config {
     /// # Errors
     /// Fails when the platform has no concept of a config directory (unlikely on Linux).
     pub fn get_config_path() -> Result<PathBuf, crate::Error> {
-        directories::BaseDirs::new()
+        let default_path = directories::BaseDirs::new()
             .map(|dirs| dirs.config_dir().join("hypr").join("hyprlog.conf"))
-            .ok_or(crate::Error::ConfigDirNotFound)
+            .ok_or(crate::Error::ConfigDirNotFound)?;
+
+        // Main default config is valid without metadata.
+        if default_path.exists() {
+            return Ok(default_path);
+        }
+
+        if let Some(root) = default_path.parent()
+            && let Some(found) = discover_metadata_config(root)
+        {
+            return Ok(found);
+        }
+
+        Ok(default_path)
     }
 
     /// Config stores level as a string for TOML ergonomics — this converts to the typed enum the logger needs.
@@ -303,4 +324,9 @@ impl Config {
     pub fn get_color(&self, name: &str) -> Option<Color> {
         self.colors.get(name).map(|hex| Color::from_hex(hex))
     }
+}
+
+fn discover_metadata_config(config_root: &Path) -> Option<PathBuf> {
+    let fallback = config_root.join("hyprlog.conf");
+    resolve_config_path_strict(config_root, &fallback, &config_meta_spec())
 }
