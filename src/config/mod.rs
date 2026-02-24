@@ -14,7 +14,10 @@ pub use structs::{
 use crate::fmt::{Alignment, Color, IconType, Transform};
 use crate::internal;
 use crate::level::Level;
-use hypr_conf::{ConfigMetaSpec, resolve_config_path_strict};
+use hypr_conf::{
+    ConfigMetaSpec, extract_sources as extract_sources_impl, resolve_config_path_strict,
+    resolve_source_targets,
+};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 use std::fs;
@@ -25,6 +28,13 @@ const CONFIG_EXTENSIONS: &[&str] = &["conf"];
 
 fn config_meta_spec() -> ConfigMetaSpec<'static> {
     ConfigMetaSpec::for_type(TYPE_VALUE, CONFIG_EXTENSIONS)
+}
+
+/// Public compatibility wrapper around the shared hypr-conf source parser.
+#[doc(hidden)]
+#[must_use]
+pub fn extract_sources(content: &str) -> (Vec<String>, String) {
+    extract_sources_impl(content)
 }
 
 /// A completely empty config file must still produce a working logger — `#[serde(default)]`
@@ -63,35 +73,6 @@ pub struct Config {
     /// Different apps sharing one config need to diverge on level, output path, or terminal settings
     /// without maintaining separate config files for each.
     pub apps: HashMap<String, AppConfig>,
-}
-
-/// Scans raw TOML for `source = "..."` directives before deserialization,
-/// since serde cannot handle them -- they are a Hyprland-style extension.
-/// Returns the extracted paths and the remaining TOML content stripped of those lines.
-#[doc(hidden)]
-#[must_use]
-pub fn extract_sources(content: &str) -> (Vec<String>, String) {
-    let mut sources = Vec::new();
-    let mut remaining = String::new();
-
-    for line in content.lines() {
-        let trimmed = line.trim();
-        if trimmed.starts_with("source") && trimmed.contains('=') {
-            if let Some(path) = trimmed
-                .split('=')
-                .nth(1)
-                .map(|s| s.trim().trim_matches('"').trim_matches('\''))
-                && !path.is_empty()
-            {
-                sources.push(path.to_string());
-            }
-        } else {
-            remaining.push_str(line);
-            remaining.push('\n');
-        }
-    }
-
-    (sources, remaining)
 }
 
 impl Config {
@@ -142,16 +123,29 @@ impl Config {
         let content = fs::read_to_string(path)?;
         let (sources, toml_content) = extract_sources(&content);
         let mut config: Self = toml::from_str(&toml_content)?;
+        let base_dir = path.parent().unwrap_or_else(|| Path::new("/"));
+        let home_dir = directories::BaseDirs::new()
+            .map_or_else(|| PathBuf::from("/"), |dirs| dirs.home_dir().to_path_buf());
 
         for source_path in sources {
             internal::debug("CONFIG", &format!("Processing source: {source_path}"));
-            let expanded = shellexpand::tilde(&source_path);
-            let source_file = Path::new(expanded.as_ref());
-            if source_file.exists() {
-                let source_config = Self::load_with_sources(source_file, seen)?;
-                config.merge(source_config);
-            } else {
-                internal::warn("CONFIG", &format!("Source file not found: {source_path}"));
+
+            let resolved_sources = resolve_source_targets(&source_path, base_dir, &home_dir);
+            if resolved_sources.is_empty() {
+                internal::warn(
+                    "CONFIG",
+                    &format!("No source files matched pattern: {source_path}"),
+                );
+                continue;
+            }
+
+            for source_file in resolved_sources {
+                if source_file.exists() {
+                    let source_config = Self::load_with_sources(&source_file, seen)?;
+                    config.merge(source_config);
+                } else {
+                    internal::warn("CONFIG", &format!("Source file not found: {source_path}"));
+                }
             }
         }
 
