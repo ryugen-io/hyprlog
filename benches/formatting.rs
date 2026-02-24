@@ -1,4 +1,4 @@
-use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use criterion::{Criterion, criterion_group, criterion_main};
 use hyprlog::config::HighlightConfig;
 use hyprlog::fmt::style;
 use hyprlog::fmt::{
@@ -6,6 +6,7 @@ use hyprlog::fmt::{
 };
 use hyprlog::level::Level;
 use std::collections::HashMap;
+use std::hint::black_box;
 
 fn bench_format_template_render(c: &mut Criterion) {
     let template = FormatTemplate::parse("{timestamp} {tag} {scope}  {msg}");

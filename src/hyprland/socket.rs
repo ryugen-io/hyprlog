@@ -7,9 +7,12 @@ use crate::internal;
 use hypr_sdk::ipc::instance;
 use std::path::{Path, PathBuf};
 
-/// Explicit overrides take priority because containers and custom setups may not follow
-/// standard runtime directory conventions. The fallback chain ensures zero-config works
-/// for the common single-instance case while still supporting multi-instance setups.
+/// Resolve the Hyprland runtime socket directory.
+///
+/// Explicit overrides take priority because containers and custom setups may not
+/// follow standard runtime directory conventions. The fallback chain keeps
+/// zero-config behavior for the common single-instance case while still
+/// supporting multi-instance setups.
 #[must_use]
 pub fn resolve_socket_dir(config: &HyprlandConfig) -> Option<PathBuf> {
     let scope = config.scope.as_str();

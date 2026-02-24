@@ -540,18 +540,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "hypr-sdk"
-version = "0.1.0"
-source = "git+https://github.com/ryugen-io/hypr-sdk.git?branch=main#d2286f608a6c6983c6d475957232ce18b90e6758"
-dependencies = [
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
-]
-
-[[package]]
-name = "hyprlog"
+name = "hypr-log"
 version = "0.6.0"
 dependencies = [
  "cbindgen",
@@ -571,6 +560,24 @@ dependencies = [
  "tokio",
  "toml 1.0.3+spec-1.1.0",
  "ulid",
+]
+
+[[package]]
+name = "hypr-log-cli"
+version = "0.6.0"
+dependencies = [
+ "hypr-log",
+]
+
+[[package]]
+name = "hypr-sdk"
+version = "0.1.0"
+source = "git+https://github.com/ryugen-io/hypr-sdk.git?branch=main#d2286f608a6c6983c6d475957232ce18b90e6758"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
 ]
 
 [[package]]

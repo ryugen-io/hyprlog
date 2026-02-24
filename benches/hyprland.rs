@@ -1,8 +1,9 @@
-use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use criterion::{Criterion, criterion_group, criterion_main};
 use hyprlog::hyprland::event::HyprlandEvent;
 use hyprlog::hyprland::formatter::EventFormatter;
 use hyprlog::hyprland::level_map;
 use std::collections::HashMap;
+use std::hint::black_box;
 
 fn make_event(name: &str, data: &str) -> HyprlandEvent {
     HyprlandEvent {

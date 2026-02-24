@@ -1,0 +1,19 @@
+[package]
+name = "hypr-log-cli"
+version = "0.6.0"
+edition = "2024"
+rust-version = "1.94"
+license = "MIT"
+repository = "https://github.com/ryugen-io/hyprlog"
+description = "CLI package for hyprlog (binary: hyprlog)"
+
+[features]
+default = ["hyprland"]
+hyprland = ["hyprlog/hyprland"]
+
+[[bin]]
+name = "hyprlog"
+path = "src/main.rs"
+
+[dependencies]
+hyprlog = { package = "hypr-log", path = "../..", default-features = false, features = ["cli"] }

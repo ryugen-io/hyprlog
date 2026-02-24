@@ -166,7 +166,7 @@ install_from_source() {
     fi
 
     log "Building release binary..."
-    if ! cargo build --release --features hyprland --bin hyprlog; then
+    if ! cargo build --release -p hypr-log-cli --features hyprland --bin hyprlog; then
         die "Build failed"
     fi
     success "Build complete"

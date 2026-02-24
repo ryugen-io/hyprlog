@@ -1,8 +1,9 @@
-use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use criterion::{Criterion, criterion_group, criterion_main};
 use hyprlog::fmt::Color;
 use hyprlog::fmt::FormatTemplate;
 use hyprlog::fmt::style;
 use hyprlog::level::Level;
+use std::hint::black_box;
 use std::str::FromStr;
 
 fn bench_format_template_parse(c: &mut Criterion) {

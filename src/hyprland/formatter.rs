@@ -73,9 +73,11 @@ static NAME_MAP: LazyLock<HashMap<&'static str, &'static str>> = LazyLock::new(|
     m
 });
 
-/// Stateless formatting loses context — a bare hex address in a closewindow event
-/// is meaningless without knowing which app it belonged to. The window cache bridges
-/// that gap by remembering openwindow→address associations.
+/// Stateless formatting loses context.
+///
+/// A bare hex address in a closewindow event is meaningless without knowing
+/// which app it belonged to. The window cache bridges that gap by remembering
+/// openwindow-to-address associations.
 pub struct EventFormatter {
     window_cache: HashMap<String, String>,
     human_readable: bool,

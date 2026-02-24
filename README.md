@@ -150,12 +150,11 @@ Output template placeholders: `{tag}`, `{icon}`, `{scope}`, `{msg}`, `{level}`, 
 
 ## Architecture
 
-Single crate, feature-gated modules:
+Workspace layout with getrenntem Core und CLI-Paket:
 
 ```
 src/
-  bin/hyprlog.rs       CLI entry point
-  lib.rs               Library entry point
+  lib.rs               Core library entry point
   error.rs             Unified error type
   logger/              Logger + builder pattern
   output/              Terminal, File, JSON backends (trait Output)
@@ -168,13 +167,16 @@ src/
   shell/               Interactive REPL with themes (feature: cli)
   hyprland/            Hyprland socket2 event listener (feature: hyprland)
   ffi.rs               C-ABI bindings (feature: ffi)
+
+crates/cli/
+  src/main.rs          CLI package, binary name bleibt `hyprlog`
 ```
 
 ### Features
 
 | Feature    | Default | Description                              |
 |------------|---------|------------------------------------------|
-| `cli`      | yes     | CLI binary and interactive shell         |
+| `cli`      | no      | CLI module + shell im Core (vom CLI-Paket genutzt) |
 | `ffi`      |         | C-ABI bindings (`libhyprlog.so`)         |
 | `hyprland` |         | Hyprland IPC event streaming             |
 
@@ -205,7 +207,8 @@ just tree             # source tree
 Direct cargo:
 
 ```bash
-cargo test --features hyprland          # all tests with hyprland
+cargo test -p hyprlog --features hyprland          # core tests with hyprland
+cargo test -p hypr-log-cli                         # cli package tests
 cargo test --test config                # single test file
 cargo test --test config -- test_name   # single test
 cargo test --lib                        # unit tests only

@@ -15,10 +15,9 @@
 
 #[cfg(feature = "hyprland")]
 use hyprlog::cli::cmd_watch;
-use hyprlog::cli::{build_logger, parse_level, print_help};
 use hyprlog::cli::{
-    cmd_cleanup, cmd_json, cmd_log, cmd_log_shorthand, cmd_preset, cmd_presets, cmd_stats,
-    cmd_themes,
+    build_logger, cmd_cleanup, cmd_json, cmd_log, cmd_log_shorthand, cmd_preset, cmd_presets,
+    cmd_stats, cmd_themes, parse_level, print_help,
 };
 use hyprlog::config::Config;
 use hyprlog::internal;
@@ -27,7 +26,6 @@ use std::process::ExitCode;
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
 
-    // Config drives output paths, log level, and formatting — must load before any logger is created
     let config = match Config::load() {
         Ok(c) => c,
         Err(e) => {
@@ -36,10 +34,8 @@ fn main() -> ExitCode {
         }
     };
 
-    // Internal logger must be ready before any command runs so diagnostic messages are captured
     internal::init_with_config(&config);
 
-    // Default to the interactive REPL when invoked without arguments (matches Hyprland CLI convention)
     if args.is_empty() {
         return match hyprlog::shell::run(&config) {
             Ok(()) => ExitCode::SUCCESS,
@@ -50,7 +46,6 @@ fn main() -> ExitCode {
         };
     }
 
-    // All subcommands share a single logger instance built from config so output is consistent
     let logger = build_logger(&config, None);
     let args_str: Vec<&str> = args.iter().map(String::as_str).collect();
 
@@ -72,9 +67,7 @@ fn main() -> ExitCode {
         "themes" => cmd_themes(&args_str[1..], &logger),
         #[cfg(feature = "hyprland")]
         "watch" => cmd_watch(&args_str[1..], &config, &logger),
-        // Allow level-first invocation for quick one-liners without typing "log" subcommand
         "trace" | "debug" | "info" | "warn" | "error" => cmd_log_shorthand(&args_str, &logger),
-        // Detect app-prefixed shorthand (e.g., `hyprlog myapp info SCOPE msg`) by checking if second arg is a valid level
         _ if args_str.len() >= 2 && parse_level(args_str[1]).is_some() => {
             cmd_log_shorthand(&args_str, &logger)
         }
