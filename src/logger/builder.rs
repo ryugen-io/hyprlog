@@ -79,7 +79,7 @@ impl LoggerBuilder {
     #[must_use]
     pub fn build(self) -> Logger {
         Logger {
-            min_level: self.min_level,
+            min_level: std::sync::atomic::AtomicU8::new(self.min_level as u8),
             outputs: self.outputs,
             presets: self.presets,
             app_name: None,

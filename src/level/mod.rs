@@ -63,6 +63,18 @@ impl fmt::Display for ParseLevelError {
 
 impl std::error::Error for ParseLevelError {}
 
+impl From<u8> for Level {
+    fn from(v: u8) -> Self {
+        match v {
+            0 => Self::Trace,
+            1 => Self::Debug,
+            2 => Self::Info,
+            3 => Self::Warn,
+            _ => Self::Error,
+        }
+    }
+}
+
 impl FromStr for Level {
     type Err = ParseLevelError;
 

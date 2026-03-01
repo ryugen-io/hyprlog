@@ -13,14 +13,25 @@ use crate::internal;
 use crate::level::Level;
 use crate::output::{LogRecord, Output};
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicU8, Ordering};
 
 /// The main logger.
-#[derive(Default)]
 pub struct Logger {
-    min_level: Level,
+    min_level: AtomicU8,
     outputs: Vec<Box<dyn Output>>,
     presets: HashMap<String, PresetConfig>,
     pub(crate) app_name: Option<String>,
+}
+
+impl Default for Logger {
+    fn default() -> Self {
+        Self {
+            min_level: AtomicU8::new(Level::Info as u8),
+            outputs: Vec::new(),
+            presets: HashMap::new(),
+            app_name: None,
+        }
+    }
 }
 
 impl Logger {
@@ -30,9 +41,18 @@ impl Logger {
         LoggerBuilder::new()
     }
 
+    /// Changes the minimum log level at runtime.
+    pub fn set_level(&self, level: Level) {
+        self.min_level.store(level as u8, Ordering::Relaxed);
+    }
+
+    fn level(&self) -> Level {
+        Level::from(self.min_level.load(Ordering::Relaxed))
+    }
+
     /// Logs a message at the given level.
     pub fn log(&self, level: Level, scope: &str, msg: &str) {
-        if level < self.min_level {
+        if level < self.level() {
             return;
         }
 
@@ -53,7 +73,7 @@ impl Logger {
 
     /// Logs a message with a custom label override.
     pub fn log_with_label(&self, level: Level, scope: &str, msg: &str, label: &str) {
-        if level < self.min_level {
+        if level < self.level() {
             return;
         }
 
@@ -74,7 +94,7 @@ impl Logger {
 
     /// Logs a message with full control options, including app name override.
     pub fn log_full(&self, level: Level, scope: &str, msg: &str, app_name: Option<&str>) {
-        if level < self.min_level {
+        if level < self.level() {
             return;
         }
 
@@ -200,8 +220,8 @@ impl Logger {
 
     /// Returns the minimum log level.
     #[must_use]
-    pub const fn min_level(&self) -> Level {
-        self.min_level
+    pub fn min_level(&self) -> Level {
+        self.level()
     }
 
     /// Returns the number of outputs.
