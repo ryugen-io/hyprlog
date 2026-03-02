@@ -1,5 +1,5 @@
 [package]
-name = "hyprlog"
+name = "hypr-log"
 description = "Flexible logging library for Hyprland and beyond"
 version = "0.6.0"
 edition = "2024"
