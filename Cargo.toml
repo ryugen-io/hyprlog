@@ -12,6 +12,7 @@ default = ["cli"]
 cli = ["dep:clap", "dep:rustyline"]
 ffi = []
 hyprland = []
+rserver = ["dep:tokio"]
 
 [lib]
 name = "hyprlog"
@@ -45,6 +46,9 @@ ulid = "1"
 # CLI (optional)
 clap = { version = "4", features = ["derive"], optional = true }
 rustyline = { version = "15", optional = true }
+
+# rserver (optional)
+tokio = { version = "1", features = ["rt-multi-thread", "net", "io-util", "macros", "signal"], optional = true }
 
 [build-dependencies]
 cbindgen = { version = "0.28", optional = true }

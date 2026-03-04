@@ -4,9 +4,15 @@ mod file;
 mod json;
 mod terminal;
 
+#[cfg(feature = "rserver")]
+mod remote;
+
 pub use file::FileOutput;
 pub use json::JsonOutput;
 pub use terminal::TerminalOutput;
+
+#[cfg(feature = "rserver")]
+pub use remote::RemoteOutput;
 
 use crate::fmt::{FormatValues, TagConfig};
 use crate::level::Level;

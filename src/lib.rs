@@ -56,6 +56,10 @@ pub mod shell;
 #[cfg(feature = "hyprland")]
 pub mod hyprland;
 
+// Remote server module (feature-gated)
+#[cfg(feature = "rserver")]
+pub mod server;
+
 // FFI module (feature-gated)
 #[cfg(feature = "ffi")]
 pub mod ffi;
@@ -78,6 +82,14 @@ pub use cli::PresetRunner;
 // Hyprland re-exports
 #[cfg(feature = "hyprland")]
 pub use hyprland::{EventListenerHandle, HyprlandEvent};
+
+// rserver re-exports
+#[cfg(feature = "rserver")]
+pub use logger::RemoteBuilder;
+#[cfg(feature = "rserver")]
+pub use output::RemoteOutput;
+#[cfg(feature = "rserver")]
+pub use server::ServerConfig;
 
 // FFI re-exports
 #[cfg(feature = "ffi")]

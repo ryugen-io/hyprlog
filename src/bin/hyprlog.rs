@@ -18,6 +18,8 @@ use hyprlog::cli::{
     cmd_cleanup, cmd_json, cmd_log, cmd_log_shorthand, cmd_preset, cmd_presets, cmd_stats,
     cmd_themes,
 };
+#[cfg(feature = "rserver")]
+use hyprlog::cli::{cmd_send, cmd_server};
 use hyprlog::config::Config;
 use hyprlog::internal;
 use std::process::ExitCode;
@@ -70,6 +72,10 @@ fn main() -> ExitCode {
         "themes" => cmd_themes(&args_str[1..], &logger),
         #[cfg(feature = "hyprland")]
         "watch" => cmd_watch(&args_str[1..], &config, &logger),
+        #[cfg(feature = "rserver")]
+        "server" => cmd_server(&args_str[1..]),
+        #[cfg(feature = "rserver")]
+        "send" => cmd_send(&args_str[1..]),
         // Shorthand: hyprlog <level> <scope> <msg>
         "trace" | "debug" | "info" | "warn" | "error" => cmd_log_shorthand(&args_str, &logger),
         // Shorthand with app: hyprlog <app> <level> <scope> <msg>

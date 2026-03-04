@@ -2,6 +2,8 @@
 
 use super::Logger;
 use super::json_builder::JsonBuilder;
+#[cfg(feature = "rserver")]
+use super::remote_builder::RemoteBuilder;
 use crate::config::{HighlightConfig, PresetConfig};
 use crate::fmt::{Color, IconSet, ScopeConfig, TagConfig, Transform};
 use crate::level::Level;
@@ -66,6 +68,16 @@ impl LoggerBuilder {
             parent: self,
             output: JsonOutput::new(),
         }
+    }
+
+    /// Adds a remote output (Unix socket or TCP) to a running hyprlog server.
+    ///
+    /// Call `.socket(path)` or `.tcp(addr)` on the returned builder,
+    /// then `.done()` to return here.
+    #[cfg(feature = "rserver")]
+    #[must_use]
+    pub const fn remote(self) -> RemoteBuilder {
+        RemoteBuilder::new(self)
     }
 
     /// Adds a custom output.

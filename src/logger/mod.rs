@@ -4,8 +4,14 @@ mod builder;
 mod from_config;
 mod json_builder;
 
+#[cfg(feature = "rserver")]
+mod remote_builder;
+
 pub use builder::{FileBuilder, LoggerBuilder, TerminalBuilder};
 pub use json_builder::JsonBuilder;
+
+#[cfg(feature = "rserver")]
+pub use remote_builder::RemoteBuilder;
 
 use crate::config::PresetConfig;
 use crate::fmt::FormatValues;

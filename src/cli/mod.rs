@@ -123,6 +123,8 @@ pub enum Command {
 
 #[cfg(feature = "hyprland")]
 pub use commands::cmd_watch;
+#[cfg(feature = "rserver")]
+pub use commands::{cmd_send, cmd_server};
 pub use commands::{
     cmd_cleanup, cmd_json, cmd_log, cmd_log_shorthand, cmd_preset, cmd_presets, cmd_stats,
     cmd_themes,
