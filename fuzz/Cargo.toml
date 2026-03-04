@@ -13,7 +13,7 @@ libfuzzer-sys = "0.4"
 [dependencies.hyprlog]
 path = ".."
 default-features = false
-features = ["hyprland"]
+features = ["hyprland", "rserver"]
 
 # Prevent this from interfering with workspaces
 [workspace]
@@ -50,4 +50,9 @@ doc = false
 [[bin]]
 name = "fuzz_config_sources"
 path = "fuzz_targets/fuzz_config_sources.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_wire_record"
+path = "fuzz_targets/fuzz_wire_record.rs"
 doc = false

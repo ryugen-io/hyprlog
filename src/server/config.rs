@@ -82,15 +82,15 @@ impl Default for ServerConfig {
 }
 
 impl ServerConfig {
-    /// Returns the path to the server config file.
+    /// Returns the path to the server config file (`~/.config/hypr/server.conf`).
     #[must_use]
     pub fn config_path() -> PathBuf {
         directories::BaseDirs::new().map_or_else(
-            || PathBuf::from("hyprlog-server.toml"),
+            || PathBuf::from("server.conf"),
             |dirs| {
                 dirs.config_dir()
                     .join("hypr")
-                    .join("hyprlog-server.toml")
+                    .join("server.conf")
             },
         )
     }
