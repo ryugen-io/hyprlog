@@ -15,7 +15,7 @@ struct JsonLogEntry {
     msg: String,
 }
 
-/// Handles `hyprlog json [<json>]`.
+/// Handles `hyprslog json [<json>]`.
 #[must_use]
 pub fn cmd_json(input: Option<&str>, logger: &Logger) -> ExitCode {
     let mut processed = 0u64;

@@ -13,7 +13,7 @@ use std::time::Duration;
 /// 1. `config.socket_dir` (explicit override)
 /// 2. `$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/`
 ///
-/// Logs errors directly through hyprlog and returns `None` on failure.
+/// Logs errors directly through hyprslog and returns `None` on failure.
 #[must_use]
 pub fn resolve_socket_dir(config: &HyprlandConfig) -> Option<PathBuf> {
     if let Some(ref dir) = config.socket_dir {
@@ -60,7 +60,7 @@ pub fn socket2_path(socket_dir: &Path) -> PathBuf {
 
 /// Connects to the Hyprland event stream (socket2).
 ///
-/// Logs errors directly through hyprlog and returns `None` on failure.
+/// Logs errors directly through hyprslog and returns `None` on failure.
 #[must_use]
 pub fn connect_event_stream(socket_dir: &Path) -> Option<BufReader<UnixStream>> {
     let path = socket2_path(socket_dir);

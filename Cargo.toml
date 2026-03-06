@@ -1,5 +1,5 @@
 [package]
-name = "hypr-log"
+name = "hyprs-log"
 description = "Flexible logging library for Hyprland and beyond"
 version = "0.6.0"
 edition = "2024"
@@ -15,11 +15,11 @@ hyprland = []
 rserver = ["dep:tokio"]
 
 [lib]
-name = "hyprlog"
+name = "hyprs_log"
 crate-type = ["lib", "cdylib"]
 
 [[bin]]
-name = "hyprlog"
+name = "hyprslog"
 path = "src/bin/hyprlog.rs"
 required-features = ["cli"]
 

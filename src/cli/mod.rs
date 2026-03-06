@@ -1,4 +1,4 @@
-//! CLI module for hyprlog.
+//! CLI module for hyprslog.
 //!
 //! This module provides the command-line interface using Clap.
 
@@ -38,10 +38,10 @@ pub enum ThemeAction {
     Preview,
 }
 
-/// hyprlog - Log messages from the command line.
+/// hyprslog - Log messages from the command line.
 #[derive(Parser)]
 #[command(
-    name = "hyprlog",
+    name = "hyprslog",
     version,
     about = "Log messages from the command line"
 )]
@@ -124,10 +124,10 @@ pub enum Command {
 #[cfg(feature = "hyprland")]
 pub use commands::cmd_watch;
 #[cfg(feature = "rserver")]
-pub use commands::{cmd_send, cmd_server};
+pub use commands::cmd_server;
 pub use commands::{
-    cmd_cleanup, cmd_json, cmd_log, cmd_log_shorthand, cmd_preset, cmd_presets, cmd_stats,
-    cmd_themes,
+    cmd_cleanup, cmd_json, cmd_log, cmd_log_shorthand, cmd_preset, cmd_presets, cmd_send,
+    cmd_stats, cmd_themes,
 };
 pub use preset::PresetRunner;
 pub use util::{build_logger, expand_path, parse_level, print_help};

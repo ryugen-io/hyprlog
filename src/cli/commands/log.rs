@@ -5,11 +5,11 @@ use crate::internal;
 use crate::logger::Logger;
 use std::process::ExitCode;
 
-/// Handles `hyprlog log <app> <level> <scope> <msg>`.
+/// Handles `hyprslog log <app> <level> <scope> <msg>`.
 #[must_use]
 pub fn cmd_log(args: &[&str], logger: &Logger) -> ExitCode {
     if args.len() < 4 {
-        internal::warn("CLI", "Usage: hyprlog log <app> <level> <scope> <message>");
+        internal::warn("CLI", "Usage: hyprslog log <app> <level> <scope> <message>");
         return ExitCode::FAILURE;
     }
     let app = args[0];
@@ -21,12 +21,12 @@ pub fn cmd_log(args: &[&str], logger: &Logger) -> ExitCode {
     ExitCode::SUCCESS
 }
 
-/// Handles `hyprlog [<app>] <level> <scope> <msg>` shorthand.
+/// Handles `hyprslog [<app>] <level> <scope> <msg>` shorthand.
 /// If first arg is not a valid level, it's treated as app name.
 #[must_use]
 pub fn cmd_log_shorthand(args: &[&str], logger: &Logger) -> ExitCode {
     if args.len() < 3 {
-        internal::warn("CLI", "Usage: hyprlog [<app>] <level> <scope> <message>");
+        internal::warn("CLI", "Usage: hyprslog [<app>] <level> <scope> <message>");
         return ExitCode::FAILURE;
     }
 
@@ -37,7 +37,7 @@ pub fn cmd_log_shorthand(args: &[&str], logger: &Logger) -> ExitCode {
     } else {
         // First arg is app name
         if args.len() < 4 {
-            internal::warn("CLI", "Usage: hyprlog <app> <level> <scope> <message>");
+            internal::warn("CLI", "Usage: hyprslog <app> <level> <scope> <message>");
             return ExitCode::FAILURE;
         }
         let app = args[0];

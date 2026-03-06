@@ -1,27 +1,27 @@
-//! hyprlog - Log messages from the command line.
+//! hyprslog - Log messages from the command line.
 //!
 //! Usage:
-//!   hyprlog                              Enter interactive shell
-//!   hyprlog log <app> <level> <scope> <msg>    Log a message
-//!   hyprlog <level> <scope> <msg>        Shorthand logging
-//!   hyprlog json [<json>]                Log from JSON (or stdin)
-//!   hyprlog preset <name>                Run a preset
-//!   hyprlog presets                      List presets
-//!   hyprlog stats                        Show statistics
-//!   hyprlog cleanup [options]            Clean up logs
-//!   hyprlog help                         Show help
+//!   hyprslog                              Enter interactive shell
+//!   hyprslog log <app> <level> <scope> <msg>    Log a message
+//!   hyprslog <level> <scope> <msg>        Shorthand logging
+//!   hyprslog json [<json>]                Log from JSON (or stdin)
+//!   hyprslog preset <name>                Run a preset
+//!   hyprslog presets                      List presets
+//!   hyprslog stats                        Show statistics
+//!   hyprslog cleanup [options]            Clean up logs
+//!   hyprslog help                         Show help
 
 #[cfg(feature = "hyprland")]
-use hyprlog::cli::cmd_watch;
-use hyprlog::cli::{build_logger, parse_level, print_help};
-use hyprlog::cli::{
-    cmd_cleanup, cmd_json, cmd_log, cmd_log_shorthand, cmd_preset, cmd_presets, cmd_stats,
-    cmd_themes,
-};
+use hyprs_log::cli::cmd_watch;
 #[cfg(feature = "rserver")]
-use hyprlog::cli::{cmd_send, cmd_server};
-use hyprlog::config::Config;
-use hyprlog::internal;
+use hyprs_log::cli::cmd_server;
+use hyprs_log::cli::{build_logger, parse_level, print_help};
+use hyprs_log::cli::{
+    cmd_cleanup, cmd_json, cmd_log, cmd_log_shorthand, cmd_preset, cmd_presets, cmd_send,
+    cmd_stats, cmd_themes,
+};
+use hyprs_log::config::Config;
+use hyprs_log::internal;
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
@@ -41,7 +41,7 @@ fn main() -> ExitCode {
 
     // No args = shell mode
     if args.is_empty() {
-        return match hyprlog::shell::run(&config) {
+        return match hyprs_log::shell::run(&config) {
             Ok(()) => ExitCode::SUCCESS,
             Err(e) => {
                 internal::error("SHELL", &format!("Shell error: {e}"));
@@ -60,7 +60,7 @@ fn main() -> ExitCode {
             ExitCode::SUCCESS
         }
         "version" | "--version" | "-V" => {
-            println!("hyprlog {}", env!("CARGO_PKG_VERSION"));
+            println!("hyprslog {}", env!("CARGO_PKG_VERSION"));
             ExitCode::SUCCESS
         }
         "log" => cmd_log(&args_str[1..], &logger),
@@ -74,17 +74,16 @@ fn main() -> ExitCode {
         "watch" => cmd_watch(&args_str[1..], &config, &logger),
         #[cfg(feature = "rserver")]
         "server" => cmd_server(&args_str[1..]),
-        #[cfg(feature = "rserver")]
         "send" => cmd_send(&args_str[1..]),
-        // Shorthand: hyprlog <level> <scope> <msg>
+        // Shorthand: hyprslog <level> <scope> <msg>
         "trace" | "debug" | "info" | "warn" | "error" => cmd_log_shorthand(&args_str, &logger),
-        // Shorthand with app: hyprlog <app> <level> <scope> <msg>
+        // Shorthand with app: hyprslog <app> <level> <scope> <msg>
         _ if args_str.len() >= 2 && parse_level(args_str[1]).is_some() => {
             cmd_log_shorthand(&args_str, &logger)
         }
         _ => {
             internal::error("CLI", &format!("Unknown command: {}", args_str[0]));
-            internal::info("CLI", "Run 'hyprlog help' for usage");
+            internal::info("CLI", "Run 'hyprslog help' for usage");
             ExitCode::FAILURE
         }
     }

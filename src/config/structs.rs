@@ -85,12 +85,12 @@ pub struct FileConfig {
 
 impl Default for FileConfig {
     fn default() -> Self {
-        let base_dir = directories::ProjectDirs::from("", "", "hyprlog").map_or_else(
+        let base_dir = directories::ProjectDirs::from("", "", "hyprs").map_or_else(
             || "logs".to_string(),
             |dirs| {
                 dirs.state_dir()
                     .unwrap_or_else(|| dirs.data_dir())
-                    .join("logs")
+                    .join("log/logs")
                     .to_string_lossy()
                     .into_owned()
             },
@@ -359,13 +359,13 @@ pub struct JsonConfig {
 
 impl Default for JsonConfig {
     fn default() -> Self {
-        let path = directories::ProjectDirs::from("", "", "hyprlog").map_or_else(
-            || "hyprlog.jsonl".to_string(),
+        let path = directories::ProjectDirs::from("", "", "hyprs").map_or_else(
+            || "log.jsonl".to_string(),
             |dirs| {
                 dirs.state_dir()
                     .unwrap_or_else(|| dirs.data_dir())
-                    .join("db")
-                    .join("hyprlog.jsonl")
+                    .join("log/db")
+                    .join("log.jsonl")
                     .to_string_lossy()
                     .into_owned()
             },

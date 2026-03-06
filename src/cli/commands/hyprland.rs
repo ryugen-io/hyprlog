@@ -70,7 +70,7 @@ unsafe fn register_sigint_handler() {
     unsafe { signal(2, sigint_handler) };
 }
 
-/// Handles `hyprlog watch [--events <filter>] [--min-level <level>]`.
+/// Handles `hyprslog watch [--events <filter>] [--min-level <level>]`.
 ///
 /// Connects to Hyprland's event socket and streams events through the logger.
 /// Blocks until Ctrl+C.

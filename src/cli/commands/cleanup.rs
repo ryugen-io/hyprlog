@@ -7,7 +7,7 @@ use crate::internal;
 use crate::logger::Logger;
 use std::process::ExitCode;
 
-/// Handles `hyprlog cleanup [options]`.
+/// Handles `hyprslog cleanup [options]`.
 #[must_use]
 pub fn cmd_cleanup(args: &[&str], config: &Config, logger: &Logger) -> ExitCode {
     let dry_run = args.contains(&"--dry-run");

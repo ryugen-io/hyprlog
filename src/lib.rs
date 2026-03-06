@@ -14,7 +14,7 @@
 //! # Example
 //!
 //! ```
-//! use hyprlog::{Logger, Level};
+//! use hyprs_log::{Logger, Level};
 //!
 //! let logger = Logger::builder()
 //!     .level(Level::Debug)
@@ -94,8 +94,8 @@ pub use server::ServerConfig;
 // FFI re-exports
 #[cfg(feature = "ffi")]
 pub use ffi::{
-    HYPRLOG_LEVEL_DEBUG, HYPRLOG_LEVEL_ERROR, HYPRLOG_LEVEL_INFO, HYPRLOG_LEVEL_TRACE,
-    HYPRLOG_LEVEL_WARN, HyprlogContext, hyprlog_debug, hyprlog_error, hyprlog_flush, hyprlog_free,
-    hyprlog_get_last_error, hyprlog_info, hyprlog_init, hyprlog_init_simple, hyprlog_init_with_app,
-    hyprlog_init_with_config, hyprlog_log, hyprlog_trace, hyprlog_warn,
+    HYPRSLOG_LEVEL_DEBUG, HYPRSLOG_LEVEL_ERROR, HYPRSLOG_LEVEL_INFO, HYPRSLOG_LEVEL_TRACE,
+    HYPRSLOG_LEVEL_WARN, HyprslogContext, hyprslog_debug, hyprslog_error, hyprslog_flush, hyprslog_free,
+    hyprslog_get_last_error, hyprslog_info, hyprslog_init, hyprslog_init_simple, hyprslog_init_with_app,
+    hyprslog_init_with_config, hyprslog_log, hyprslog_trace, hyprslog_warn,
 };

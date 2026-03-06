@@ -57,12 +57,12 @@ impl FileOutput {
     /// Creates a new file output with defaults.
     #[must_use]
     pub fn new() -> Self {
-        let base_dir = directories::ProjectDirs::from("", "", "hyprlog").map_or_else(
+        let base_dir = directories::ProjectDirs::from("", "", "hyprs").map_or_else(
             || "logs".to_string(),
             |dirs| {
                 dirs.state_dir()
                     .unwrap_or_else(|| dirs.data_dir())
-                    .join("logs")
+                    .join("log/logs")
                     .to_string_lossy()
                     .into_owned()
             },
@@ -74,7 +74,7 @@ impl FileOutput {
             filename_template: FormatTemplate::parse("{scope}_{level}_{day}.log"),
             content_template: FormatTemplate::parse("{timestamp} {tag} {scope}  {msg}"),
             timestamp_format: "%Y-%m-%d %H:%M:%S".to_string(),
-            app_name: "hyprlog".to_string(),
+            app_name: "hyprslog".to_string(),
             tag_config: TagConfig::default(),
             buffer: Mutex::new(None),
         }

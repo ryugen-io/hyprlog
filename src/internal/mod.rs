@@ -1,6 +1,6 @@
-//! Internal logging for hyprlog itself.
+//! Internal logging for hyprslog itself.
 //!
-//! hyprlog uses its own Logger for internal messages.
+//! hyprslog uses its own Logger for internal messages.
 
 use crate::config::Config;
 use crate::fmt::IconSet;
@@ -77,7 +77,7 @@ fn build_internal_logger(config: &Config) -> Logger {
             .filename_structure(&config.file.filename_structure)
             .content_structure(&config.file.content_structure)
             .timestamp_format(&config.file.timestamp_format)
-            .app_name("hyprlog")
+            .app_name("hyprslog")
             .done();
     }
 

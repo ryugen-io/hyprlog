@@ -7,7 +7,7 @@ use crate::internal;
 use crate::logger::Logger;
 use std::process::ExitCode;
 
-/// Handles `hyprlog stats [--app <name>]`.
+/// Handles `hyprslog stats [--app <name>]`.
 #[must_use]
 pub fn cmd_stats(args: &[&str], config: &Config, logger: &Logger) -> ExitCode {
     let base_dir = expand_path(&config.file.base_dir);

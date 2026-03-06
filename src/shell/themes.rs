@@ -53,7 +53,7 @@ impl Theme {
     pub fn list() -> Vec<&'static str> {
         ALL_THEMES.iter().map(|t| t.name()).collect()
     }
-    /// Returns the gradient colors for each character in "hyprlog>".
+    /// Returns the gradient colors for each character in "hyprslog>".
     #[must_use]
     pub const fn gradient(self) -> &'static [Rgb; 8] {
         match self {

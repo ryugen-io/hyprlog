@@ -4,7 +4,7 @@ use crate::logger::Logger;
 use crate::shell::themes::{ALL_THEMES, Theme};
 use std::process::ExitCode;
 
-/// Handles `hyprlog themes [list|preview]`.
+/// Handles `hyprslog themes [list|preview]`.
 #[must_use]
 pub fn cmd_themes(args: &[&str], logger: &Logger) -> ExitCode {
     match args.first().copied() {
@@ -28,7 +28,7 @@ pub fn cmd_themes(args: &[&str], logger: &Logger) -> ExitCode {
         }
         Some(name) => {
             logger.error("THEMES", &format!("Unknown subcommand: {name}"));
-            logger.print("THEMES", "Usage: hyprlog themes [list|preview]");
+            logger.print("THEMES", "Usage: hyprslog themes [list|preview]");
             return ExitCode::FAILURE;
         }
     }

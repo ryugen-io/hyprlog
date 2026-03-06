@@ -1,4 +1,4 @@
-//! Optional TOML configuration for hyprlog.
+//! Optional TOML configuration for hyprslog.
 
 mod structs;
 
@@ -83,7 +83,7 @@ pub fn extract_sources(content: &str) -> (Vec<String>, String) {
 impl Config {
     /// Loads configuration from the default location.
     ///
-    /// Looks for `~/.config/hypr/hyprlog.conf`.
+    /// Looks for `~/.config/hypr/hyprs/log.conf`.
     /// Supports Hyprland-style `source = "path"` directives.
     ///
     /// # Errors
@@ -218,7 +218,7 @@ impl Config {
     /// Returns error if path cannot be determined.
     pub fn get_config_path() -> Result<PathBuf, crate::Error> {
         directories::BaseDirs::new()
-            .map(|dirs| dirs.config_dir().join("hypr").join("hyprlog.conf"))
+            .map(|dirs| dirs.config_dir().join("hypr/hyprs").join("log.conf"))
             .ok_or(crate::Error::ConfigDirNotFound)
     }
 

@@ -1,4 +1,4 @@
-//! Remote output: forwards log records to a hyprlog server over the network.
+//! Remote output: forwards log records to a hyprslog server over the network.
 
 use crate::internal;
 use crate::output::{LogRecord, Output};
@@ -99,7 +99,7 @@ fn send_with_retry(target: &RemoteTarget, conn: &mut Option<Conn>, bytes: &[u8])
 
 // ── RemoteOutput ──────────────────────────────────────────────────────────────
 
-/// Output backend that forwards log records to a running hyprlog server.
+/// Output backend that forwards log records to a running hyprslog server.
 ///
 /// `write()` is non-blocking: records are enqueued in a bounded channel and
 /// sent by a dedicated background OS thread. Records are silently dropped when

@@ -7,16 +7,16 @@
 //! # Daemon lifecycle
 //!
 //! ```bash
-//! hyprlog server start    # fork background process, write PID file
-//! hyprlog server status   # check if running
-//! hyprlog server stop     # send SIGTERM via PID file
+//! hyprslog server start    # fork background process, write PID file
+//! hyprslog server status   # check if running
+//! hyprslog server stop     # send SIGTERM via PID file
 //! ```
 //!
 //! # Sending logs
 //!
 //! ```bash
-//! hyprlog send info NET "connected"               # → Unix socket (default)
-//! hyprlog send --tcp 127.0.0.1:9872 warn DB "slow query"
+//! hyprslog send info NET "connected"               # → Unix socket (default)
+//! hyprslog send --tcp 127.0.0.1:9872 warn DB "slow query"
 //! ```
 
 pub mod config;
@@ -53,7 +53,7 @@ pub fn run(config: &ServerConfig) -> Result<(), crate::Error> {
 
     let logger = Arc::new(builder.build());
 
-    internal::info("RSERVER", "starting hyprlog server");
+    internal::info("RSERVER", "starting hyprslog server");
 
     let rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()

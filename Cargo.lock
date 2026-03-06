@@ -495,7 +495,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "hypr-log"
+name = "hyprs-log"
 version = "0.6.0"
 dependencies = [
  "cbindgen",

@@ -1,8 +1,8 @@
-//! Unified error type for all hyprlog operations.
+//! Unified error type for all hyprslog operations.
 
 use std::path::PathBuf;
 
-/// Error type for hyprlog operations.
+/// Error type for hyprslog operations.
 #[derive(Debug)]
 pub enum Error {
     /// I/O error.

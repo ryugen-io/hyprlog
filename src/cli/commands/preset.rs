@@ -6,11 +6,11 @@ use crate::internal;
 use crate::logger::Logger;
 use std::process::ExitCode;
 
-/// Handles `hyprlog preset <name>`.
+/// Handles `hyprslog preset <name>`.
 #[must_use]
 pub fn cmd_preset(args: &[&str], config: &Config, logger: &Logger) -> ExitCode {
     if args.is_empty() {
-        internal::warn("CLI", "Usage: hyprlog preset <name>");
+        internal::warn("CLI", "Usage: hyprslog preset <name>");
         return ExitCode::FAILURE;
     }
     let runner = PresetRunner::new(config, logger);
@@ -23,7 +23,7 @@ pub fn cmd_preset(args: &[&str], config: &Config, logger: &Logger) -> ExitCode {
     }
 }
 
-/// Handles `hyprlog presets` to list all presets.
+/// Handles `hyprslog presets` to list all presets.
 #[must_use]
 pub fn cmd_presets(config: &Config, logger: &Logger) -> ExitCode {
     let runner = PresetRunner::new(config, logger);

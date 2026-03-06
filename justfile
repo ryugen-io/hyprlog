@@ -82,3 +82,15 @@ docs *args:
 
 install:
     @./install.sh
+
+# === Deploy ===
+
+deploy-rpi host="rpi":
+    @echo "==> syncing source to {{host}}..."
+    @rsync -a --exclude target --exclude .git . {{host}}:~/projects/hyprs-log/
+    @echo "==> building on {{host}}..."
+    @ssh {{host}} "cd ~/projects/hyprs-log && cargo build --release --features rserver --ignore-rust-version 2>&1"
+    @echo "==> installing binary on {{host}}..."
+    @ssh {{host}} "cp ~/projects/hyprs-log/target/release/hyprlog ~/.local/bin/hyprlog.new && mv ~/.local/bin/hyprlog.new ~/.local/bin/hyprlog && sudo systemctl restart hyprlog"
+    @echo "==> done"
+    @ssh {{host}} "systemctl status hyprlog --no-pager -l"

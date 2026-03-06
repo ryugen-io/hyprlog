@@ -1,4 +1,4 @@
-//! hyprlog interactive shell.
+//! hyprslog interactive shell.
 
 pub mod themes;
 
@@ -70,7 +70,7 @@ pub fn run(config: &Config) -> Result<(), String> {
     internal::debug("SHELL", "Shell ready");
     logger.print(
         "SHELL",
-        "hyprlog shell - type 'help' for commands, 'quit' to exit",
+        "hyprslog shell - type 'help' for commands, 'quit' to exit",
     );
 
     loop {
@@ -181,7 +181,7 @@ fn cmd_log(parts: &[&str], logger: &Logger) {
 
 fn cmd_log_shorthand(parts: &[&str], logger: &Logger) {
     // If parts[1] is a valid level, then parts[0] is app name
-    // Otherwise parts[0] is level (and app defaults to "hyprlog")
+    // Otherwise parts[0] is level (and app defaults to "hyprslog")
     if parts.len() < 3 {
         internal::warn("SHELL", &format!("Usage: {} <scope> <message>", parts[0]));
         return;
@@ -329,7 +329,7 @@ fn print_help() {
     println!(
         "Commands:
   log <app> <level> <scope> <message>   Log a message for specific app
-  [<app>] <level> <scope> <message>     Shorthand (app defaults to 'hyprlog')
+  [<app>] <level> <scope> <message>     Shorthand (app defaults to 'hyprslog')
   preset <name>                         Run a preset
   presets                               List available presets
   stats                                 Show log statistics
@@ -347,6 +347,6 @@ Levels: trace, debug, info, warn, error"
 }
 
 fn get_history_path() -> Option<std::path::PathBuf> {
-    directories::ProjectDirs::from("", "", "hyprlog")
-        .map(|dirs| dirs.data_dir().join("shell_history"))
+    directories::ProjectDirs::from("", "", "hyprs")
+        .map(|dirs| dirs.data_dir().join("log/shell_history"))
 }

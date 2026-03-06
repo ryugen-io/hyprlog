@@ -54,7 +54,7 @@ fn detect_binary_name() -> String {
 /// Prints the help message.
 pub fn print_help() {
     let hyprland_help = if cfg!(feature = "hyprland") {
-        "\n  hyprlog watch [options]                  Listen for Hyprland events\
+        "\n  hyprslog watch [options]                  Listen for Hyprland events\
          \n    --events <e1,e2,...>                  Only show specific events\
          \n    --min-level <level>                  Minimum event level\n"
     } else {
@@ -62,25 +62,25 @@ pub fn print_help() {
     };
 
     let hyprland_examples = if cfg!(feature = "hyprland") {
-        "\n  hyprlog watch\
-         \n  hyprlog watch --events openwindow,closewindow"
+        "\n  hyprslog watch\
+         \n  hyprslog watch --events openwindow,closewindow"
     } else {
         ""
     };
 
     println!(
-        "hyprlog - Flexible logging from the command line
+        "hyprslog - Flexible logging from the command line
 
 Usage:
-  hyprlog                                   Enter interactive shell
-  hyprlog log <app> <level> <scope> <msg>   Log a message for specific app
-  hyprlog [<app>] <level> <scope> <msg>     Shorthand (app defaults to 'hyprlog')
-  hyprlog json [<json>]                     Log from JSON (or stdin with -)
-  hyprlog preset <name>                     Run a preset
-  hyprlog presets                           List available presets
-  hyprlog stats [--app <name>]              Show log statistics
-  hyprlog themes [list|preview]             List or preview prompt themes
-  hyprlog cleanup [options]                 Clean up old logs
+  hyprslog                                   Enter interactive shell
+  hyprslog log <app> <level> <scope> <msg>   Log a message for specific app
+  hyprslog [<app>] <level> <scope> <msg>     Shorthand (app defaults to 'hyprslog')
+  hyprslog json [<json>]                     Log from JSON (or stdin with -)
+  hyprslog preset <name>                     Run a preset
+  hyprslog presets                           List available presets
+  hyprslog stats [--app <name>]              Show log statistics
+  hyprslog themes [list|preview]             List or preview prompt themes
+  hyprslog cleanup [options]                 Clean up old logs
     --older-than <N>d                       Delete files older than N days
     --before <DATE>                         Delete files modified before DATE (YYYY-MM-DD)
     --after <DATE>                          Delete files modified after DATE (YYYY-MM-DD)
@@ -90,10 +90,10 @@ Usage:
     --app <name>                            Filter by app name
     --all                                   Delete all files
     --dry-run                               Show what would be done{hyprland_help}
-  hyprlog help                              Show this help
-  hyprlog version                           Show version
+  hyprslog help                              Show this help
+  hyprslog version                           Show version
 
-Config defaults (in ~/.config/hypr/hyprlog.conf):
+Config defaults (in ~/.config/hypr/hyprs/log.conf):
   [cleanup]
   max_age_days = 30
   max_total_size = \"500M\"
@@ -102,12 +102,12 @@ Config defaults (in ~/.config/hypr/hyprlog.conf):
 Levels: trace, debug, info, warn, error
 
 Examples:
-  hyprlog info INIT \"Application started\"
-  hyprlog myapp info INIT \"Application started\"
-  hyprlog log myapp error NET \"Connection failed\"
-  hyprlog cleanup --dry-run
-  hyprlog cleanup --compress --older-than 7d --keep-last 5
-  hyprlog cleanup --before 2024-01-01 --dry-run
-  echo '{{\"level\":\"info\",\"scope\":\"TEST\",\"msg\":\"hello\"}}' | hyprlog json{hyprland_examples}"
+  hyprslog info INIT \"Application started\"
+  hyprslog myapp info INIT \"Application started\"
+  hyprslog log myapp error NET \"Connection failed\"
+  hyprslog cleanup --dry-run
+  hyprslog cleanup --compress --older-than 7d --keep-last 5
+  hyprslog cleanup --before 2024-01-01 --dry-run
+  echo '{{\"level\":\"info\",\"scope\":\"TEST\",\"msg\":\"hello\"}}' | hyprslog json{hyprland_examples}"
     );
 }

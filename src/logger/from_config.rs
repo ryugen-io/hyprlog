@@ -1,13 +1,13 @@
-//! Logger configuration from hyprlog config files.
+//! Logger configuration from hyprslog config files.
 
 use super::{Logger, LoggerBuilder};
 use crate::internal;
 use crate::level::Level;
 
 impl Logger {
-    /// Creates a logger from the default hyprlog config file.
+    /// Creates a logger from the default hyprslog config file.
     ///
-    /// Loads config from `~/.config/hypr/hyprlog.conf` and builds a logger
+    /// Loads config from `~/.config/hypr/hyprs/log.conf` and builds a logger
     /// with terminal and file outputs as configured.
     ///
     /// # Arguments
@@ -22,7 +22,7 @@ impl Logger {
     /// Creates a logger from a given config.
     ///
     /// # Arguments
-    /// * `config` - The hyprlog config to use.
+    /// * `config` - The hyprslog config to use.
     /// * `app_name` - Application name override.
     ///
     /// This method applies app-specific overrides from `[apps.{app_name}]` sections.

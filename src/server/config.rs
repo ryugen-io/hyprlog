@@ -5,15 +5,15 @@ use std::path::PathBuf;
 
 fn default_socket_path() -> String {
     std::env::var("XDG_RUNTIME_DIR").map_or_else(
-        |_| "/tmp/hyprlog.sock".to_string(),
-        |runtime| format!("{runtime}/hyprlog.sock"),
+        |_| "/tmp/hyprslog.sock".to_string(),
+        |runtime| format!("{runtime}/hyprslog.sock"),
     )
 }
 
 fn default_pid_file() -> String {
     std::env::var("XDG_RUNTIME_DIR").map_or_else(
-        |_| "/tmp/hyprlog.pid".to_string(),
-        |runtime| format!("{runtime}/hyprlog.pid"),
+        |_| "/tmp/hyprslog.pid".to_string(),
+        |runtime| format!("{runtime}/hyprslog.pid"),
     )
 }
 
@@ -37,9 +37,9 @@ const fn default_terminal_enabled() -> bool {
     true
 }
 
-/// Configuration for the hyprlog server daemon.
+/// Configuration for the hyprslog server daemon.
 ///
-/// Loaded from `~/.config/hypr/hyprlog-server.toml`.
+/// Loaded from `~/.config/hypr/hyprs/log-server.toml`.
 /// All fields have sensible defaults — the file is optional.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default)]
@@ -82,20 +82,20 @@ impl Default for ServerConfig {
 }
 
 impl ServerConfig {
-    /// Returns the path to the server config file (`~/.config/hypr/server.conf`).
+    /// Returns the path to the server config file (`~/.config/hypr/hyprs/log-server.toml`).
     #[must_use]
     pub fn config_path() -> PathBuf {
         directories::BaseDirs::new().map_or_else(
-            || PathBuf::from("server.conf"),
+            || PathBuf::from("log-server.toml"),
             |dirs| {
                 dirs.config_dir()
-                    .join("hypr")
-                    .join("server.conf")
+                    .join("hypr/hyprs")
+                    .join("log-server.toml")
             },
         )
     }
 
-    /// Loads config from `~/.config/hypr/hyprlog-server.toml`.
+    /// Loads config from `~/.config/hypr/hyprs/log-server.toml`.
     ///
     /// Returns defaults silently if the file does not exist.
     ///
@@ -144,7 +144,7 @@ mod tests {
 
     #[test]
     fn load_returns_defaults_when_missing() {
-        // Very unlikely the test runner has a hyprlog-server.toml in its home.
+        // Very unlikely the test runner has a hyprs/log-server.toml in its home.
         // If it does, we just verify load() doesn't error.
         assert!(ServerConfig::load().is_ok());
     }

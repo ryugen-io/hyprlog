@@ -70,7 +70,7 @@ impl LoggerBuilder {
         }
     }
 
-    /// Adds a remote output (Unix socket or TCP) to a running hyprlog server.
+    /// Adds a remote output (Unix socket or TCP) to a running hyprslog server.
     ///
     /// Call `.socket(path)` or `.tcp(addr)` on the returned builder,
     /// then `.done()` to return here.
