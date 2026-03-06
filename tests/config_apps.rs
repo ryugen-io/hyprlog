@@ -1,7 +1,7 @@
 //! Tests for per-app configuration overrides via `[apps.X]` sections.
 
-use hyprlog::Config;
-use hyprlog::config::{AppConfig, AppFileConfig, AppTerminalConfig};
+use hyprs_log::Config;
+use hyprs_log::config::{AppConfig, AppFileConfig, AppTerminalConfig};
 
 #[test]
 fn for_app_level_override() {

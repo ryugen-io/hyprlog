@@ -1,6 +1,6 @@
 #![cfg(feature = "cli")]
 
-use hyprlog::shell::themes::{ALL_THEMES, Theme};
+use hyprs_log::shell::themes::{ALL_THEMES, Theme};
 use std::str::FromStr;
 
 #[test]

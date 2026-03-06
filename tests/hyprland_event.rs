@@ -2,7 +2,7 @@
 
 #![cfg(feature = "hyprland")]
 
-use hyprlog::HyprlandEvent;
+use hyprs_log::HyprlandEvent;
 
 #[test]
 fn parse_valid_event() {

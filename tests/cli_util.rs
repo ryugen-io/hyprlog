@@ -2,8 +2,8 @@
 
 #![cfg(feature = "cli")]
 
-use hyprlog::Level;
-use hyprlog::cli::util::{expand_path, parse_level};
+use hyprs_log::Level;
+use hyprs_log::cli::util::{expand_path, parse_level};
 
 #[test]
 fn parse_level_valid() {

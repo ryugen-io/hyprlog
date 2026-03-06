@@ -1,7 +1,7 @@
 //! Tests for configuration functionality.
 
-use hyprlog::Transform;
-use hyprlog::{Config, Level};
+use hyprs_log::Transform;
+use hyprs_log::{Config, Level};
 
 #[test]
 fn default_config() {

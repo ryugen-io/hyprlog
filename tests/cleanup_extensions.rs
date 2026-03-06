@@ -1,6 +1,6 @@
 //! Tests for cleanup feature extensions.
 
-use hyprlog::{CleanupOptions, cleanup};
+use hyprs_log::{CleanupOptions, cleanup};
 use std::fs;
 use tempfile::tempdir;
 

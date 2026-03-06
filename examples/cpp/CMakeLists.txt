@@ -11,11 +11,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # The connection between C++ and Rust works like this:
 #
 #   +------------------+     +------------------+     +------------------+
-#   |   main.cpp       |     |   hyprlog.h      |     |   libhyprlog.so  |
+#   |   main.cpp       |     |   hyprslog.h      |     |   libhyprlog.so  |
 #   |   (your code)    |---->|   (interface)    |---->|   (Rust code)    |
 #   +------------------+     +------------------+     +------------------+
 #         |                        |                        |
-#         |  #include "hyprlog.h"  |                        |
+#         |  #include "hyprslog.h"  |                        |
 #         |  (compile time)        |                        |
 #         |                        |                        |
 #         +------------------------+                        |
@@ -35,7 +35,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # After running `cargo build --release --features ffi`, the library is at:
 #   target/release/libhyprlog.so (Linux)
 #   target/release/libhyprlog.dylib (macOS)
-#   target/release/hyprlog.dll (Windows)
+#   target/release/hyprslog.dll (Windows)
 
 set(HYPRLOG_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 set(HYPRLOG_INCLUDE_DIR "${HYPRLOG_ROOT}/include")
@@ -59,8 +59,8 @@ endif()
 # ------------------------------------------------------------------------------
 # This tells CMake about the pre-built Rust library
 
-add_library(hyprlog SHARED IMPORTED)
-set_target_properties(hyprlog PROPERTIES
+add_library(hyprslog SHARED IMPORTED)
+set_target_properties(hyprslog PROPERTIES
     # Where the actual compiled code lives
     IMPORTED_LOCATION "${HYPRLOG_LIB_DIR}/libhyprlog.so"
 
@@ -76,9 +76,9 @@ add_executable(hyprlog_example main.cpp)
 
 # Link against the Rust library
 # This does two things:
-#   1. Adds include path for hyprlog.h (compile time)
+#   1. Adds include path for hyprslog.h (compile time)
 #   2. Links libhyprlog.so (link time)
-target_link_libraries(hyprlog_example PRIVATE hyprlog)
+target_link_libraries(hyprlog_example PRIVATE hyprslog)
 
 # ------------------------------------------------------------------------------
 # Step 4: Set up runtime library path

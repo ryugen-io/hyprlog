@@ -1,4 +1,4 @@
-# hyprlog
+# hyprslog
 
 Unified logging for the Hypr ecosystem. CLI tool, Rust library, C-ABI FFI, and optional Hyprland IPC event streaming.
 
@@ -9,34 +9,34 @@ Unified logging for the Hypr ecosystem. CLI tool, Rust library, C-ABI FFI, and o
 ./install.sh
 
 # remote
-curl -fsSL https://raw.githubusercontent.com/ryugen-io/hyprlog/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ryugen-io/hyprslog/main/install.sh | bash
 ```
 
-Installs to `~/.local/bin/hypr/hyprlog`. Config at `~/.config/hypr/hyprlog.conf`.
+Installs to `~/.local/bin/hypr/hyprslog`. Config at `~/.config/hypr/hyprslog.conf`.
 
 ## Usage
 
 ### CLI
 
 ```bash
-hyprlog info INIT "Application started"
-hyprlog myapp info NET "Connection established"
-hyprlog log myapp error NET "Connection failed"
-echo '{"level":"info","scope":"TEST","msg":"hello"}' | hyprlog json
-hyprlog preset startup
-hyprlog stats
-hyprlog cleanup --dry-run
-hyprlog cleanup --compress --older-than 7d --keep-last 5
-hyprlog themes preview
-hyprlog watch                              # stream Hyprland events
-hyprlog watch --events openwindow,closewindow --min-level warn
-hyprlog                                    # interactive shell
+hyprslog info INIT "Application started"
+hyprslog myapp info NET "Connection established"
+hyprslog log myapp error NET "Connection failed"
+echo '{"level":"info","scope":"TEST","msg":"hello"}' | hyprslog json
+hyprslog preset startup
+hyprslog stats
+hyprslog cleanup --dry-run
+hyprslog cleanup --compress --older-than 7d --keep-last 5
+hyprslog themes preview
+hyprslog watch                              # stream Hyprland events
+hyprslog watch --events openwindow,closewindow --min-level warn
+hyprslog                                    # interactive shell
 ```
 
 ### Rust Library
 
 ```rust
-use hyprlog::{Logger, Level};
+use hyprslog::{Logger, Level};
 
 let logger = Logger::builder()
     .level(Level::Debug)
@@ -44,10 +44,10 @@ let logger = Logger::builder()
         .colors(true)
         .done()
     .file()
-        .base_dir("~/.local/state/hyprlog/logs")
+        .base_dir("~/.local/state/hyprslog/logs")
         .done()
     .json()
-        .path("~/.local/state/hyprlog/db/hyprlog.jsonl")
+        .path("~/.local/state/hyprslog/db/hyprslog.jsonl")
         .done()
     .build();
 
@@ -59,18 +59,18 @@ logger.error("NET", "Connection <red>failed</red>");
 ### C-ABI (FFI)
 
 ```c
-#include "hyprlog.h"
+#include "hyprslog.h"
 
 HyprlogContext* ctx = hyprlog_init_simple();
 hyprlog_info(ctx, "MAIN", "Hello from C");
 hyprlog_free(ctx);
 ```
 
-Header: `include/hyprlog.h`. Link against `libhyprlog.so` / `libhyprlog.a`. See `examples/cpp/` for a full CMake example.
+Header: `include/hyprslog.h`. Link against `libhyprlog.so` / `libhyprlog.a`. See `examples/cpp/` for a full CMake example.
 
 ## Configuration
 
-TOML format at `~/.config/hypr/hyprlog.conf`. Supports Hyprland-style `source = "path"` includes with cycle detection.
+TOML format at `~/.config/hypr/hyprslog.conf`. Supports Hyprland-style `source = "path"` includes with cycle detection.
 
 ```toml
 [general]
@@ -84,11 +84,11 @@ structure = "{tag} {scope}  {msg}"
 
 [file]
 enabled = true
-base_dir = "~/.local/state/hyprlog/logs"
+base_dir = "~/.local/state/hyprslog/logs"
 
 [json]
 enabled = false
-path = "~/.local/state/hyprlog/db/hyprlog.jsonl"
+path = "~/.local/state/hyprslog/db/hyprslog.jsonl"
 
 [cleanup]
 max_age_days = 30
@@ -154,7 +154,7 @@ Single crate, feature-gated modules:
 
 ```
 src/
-  bin/hyprlog.rs       CLI entry point
+  bin/hyprslog.rs       CLI entry point
   lib.rs               Library entry point
   error.rs             Unified error type
   logger/              Logger + builder pattern
@@ -163,7 +163,7 @@ src/
   fmt/                 Formatting: color, style, tags, scope, icons, highlight, templates
   level/               Log levels (Trace, Debug, Info, Warn, Error)
   cleanup/             Age/size-based log cleanup with gzip compression
-  internal/            Internal hyprlog logger (OnceLock)
+  internal/            Internal hyprslog logger (OnceLock)
   cli/                 CLI commands (feature: cli)
   shell/               Interactive REPL with themes (feature: cli)
   hyprland/            Hyprland socket2 event listener (feature: hyprland)

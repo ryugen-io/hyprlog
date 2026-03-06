@@ -1,6 +1,6 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
-use hyprlog::fmt::{FormatTemplate, FormatValues};
+use hyprs_log::fmt::{FormatTemplate, FormatValues};
 
 fuzz_target!(|data: &str| {
     // Must not panic on any template string

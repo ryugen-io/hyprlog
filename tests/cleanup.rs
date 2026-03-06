@@ -1,6 +1,6 @@
 //! Tests for cleanup module.
 
-use hyprlog::{CleanupOptions, cleanup, format_size, parse_size, stats};
+use hyprs_log::{CleanupOptions, cleanup, format_size, parse_size, stats};
 use std::fs;
 use tempfile::tempdir;
 

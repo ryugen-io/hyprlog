@@ -2,8 +2,8 @@
 
 #![cfg(feature = "hyprland")]
 
-use hyprlog::Level;
-use hyprlog::hyprland::level_map::{default_level_map, resolve_level};
+use hyprs_log::Level;
+use hyprs_log::hyprland::level_map::{default_level_map, resolve_level};
 use std::collections::HashMap;
 
 #[test]

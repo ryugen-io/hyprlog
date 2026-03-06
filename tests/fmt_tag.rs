@@ -1,5 +1,5 @@
-use hyprlog::Level;
-use hyprlog::fmt::{Alignment, TagConfig, Transform};
+use hyprs_log::Level;
+use hyprs_log::fmt::{Alignment, TagConfig, Transform};
 
 #[test]
 fn format_applies_alignment_and_width() {

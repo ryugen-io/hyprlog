@@ -5,7 +5,7 @@ version = "0.6.0"
 edition = "2024"
 rust-version = "1.94"
 license = "MIT"
-repository = "https://github.com/ryugen-io/hyprlog"
+repository = "https://github.com/ryugen-io/hyprs-log"
 
 [features]
 default = ["cli"]
@@ -20,7 +20,7 @@ crate-type = ["lib", "cdylib"]
 
 [[bin]]
 name = "hyprslog"
-path = "src/bin/hyprlog.rs"
+path = "src/bin/hyprslog.rs"
 required-features = ["cli"]
 
 [lints.rust]

@@ -1,10 +1,10 @@
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
-use hyprlog::config::HighlightConfig;
-use hyprlog::fmt::style;
-use hyprlog::fmt::{
+use hyprs_log::config::HighlightConfig;
+use hyprs_log::fmt::style;
+use hyprs_log::fmt::{
     Alignment, Color, FormatTemplate, FormatValues, ScopeConfig, TagConfig, Transform, inject_tags,
 };
-use hyprlog::level::Level;
+use hyprs_log::level::Level;
 use std::collections::HashMap;
 
 fn bench_format_template_render(c: &mut Criterion) {

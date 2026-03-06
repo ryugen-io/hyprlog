@@ -1,9 +1,9 @@
 #![cfg(feature = "cli")]
 
-use hyprlog::Config;
-use hyprlog::Logger;
-use hyprlog::cli::PresetRunner;
-use hyprlog::config::PresetConfig;
+use hyprs_log::Config;
+use hyprs_log::Logger;
+use hyprs_log::cli::PresetRunner;
+use hyprs_log::config::PresetConfig;
 
 #[test]
 fn run_returns_error_for_invalid_level() {

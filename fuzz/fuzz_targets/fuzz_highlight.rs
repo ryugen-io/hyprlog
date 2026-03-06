@@ -1,7 +1,7 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
-use hyprlog::config::HighlightConfig;
-use hyprlog::fmt::inject_tags;
+use hyprs_log::config::HighlightConfig;
+use hyprs_log::fmt::inject_tags;
 
 fuzz_target!(|data: &str| {
     let mut config = HighlightConfig::default();

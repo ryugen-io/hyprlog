@@ -5,7 +5,7 @@
 
 ## Overview
 
-Add a remote logging server to hyprlog, feature-gated under `rserver`. Programs on the same machine or network can send log records to a running hyprlog daemon, which handles all output (terminal, file, JSON). Clients use a Unix domain socket (local IPC) or TCP (network).
+Add a remote logging server to hyprslog, feature-gated under `rserver`. Programs on the same machine or network can send log records to a running hyprslog daemon, which handles all output (terminal, file, JSON). Clients use a Unix domain socket (local IPC) or TCP (network).
 
 ## Feature Flag
 
@@ -19,7 +19,7 @@ Tokio with `features = ["net", "io-util", "rt-multi-thread", "macros", "sync"]`.
 
 ```
                     ┌─────────────────────────────────┐
-                    │    hyprlog server daemon         │
+                    │    hyprslog server daemon         │
                     │  (feature: rserver)              │
                     │                                  │
                     │  tokio::main                     │
@@ -44,7 +44,7 @@ Tokio with `features = ["net", "io-util", "rt-multi-thread", "macros", "sync"]`.
                     │
          ┌──────────────────┐
          │  CLI:            │
-         │  hyprlog send    │
+         │  hyprslog send    │
          └──────────────────┘
 ```
 
@@ -64,7 +64,7 @@ Fields:
 
 The protocol is human-readable and can be tested with `nc`:
 ```bash
-echo '{"level":"warn","scope":"TEST","message":"hello"}' | nc -U /run/user/1000/hyprlog.sock
+echo '{"level":"warn","scope":"TEST","message":"hello"}' | nc -U /run/user/1000/hyprslog.sock
 ```
 
 ## New Modules
@@ -89,10 +89,10 @@ Path: `~/.config/hypr/server.conf`
 
 ```toml
 [server]
-socket_path = "/run/user/1000/hyprlog.sock"
+socket_path = "/run/user/1000/hyprslog.sock"
 tcp_port    = 9872
 tcp_bind    = "127.0.0.1"
-pid_file    = "/run/user/1000/hyprlog.pid"
+pid_file    = "/run/user/1000/hyprslog.pid"
 
 [output.terminal]
 enabled = true
@@ -100,10 +100,10 @@ colors  = true
 
 [output.file]
 enabled = true
-path    = "~/.local/share/hypr/hyprlog/server.log"
+path    = "~/.local/share/hypr/hyprslog/server.log"
 ```
 
-The server config is separate from the client config (`hyprlog.conf`) to allow independent configuration of the daemon's outputs.
+The server config is separate from the client config (`hyprslog.conf`) to allow independent configuration of the daemon's outputs.
 
 ## CLI Commands
 
@@ -111,17 +111,17 @@ Consistent with existing positional-arg pattern:
 
 ```bash
 # Server lifecycle
-hyprlog server start                           # Fork daemon, write PID file
-hyprlog server stop                            # Send SIGTERM via PID file
-hyprlog server status                          # Check if daemon is running
+hyprslog server start                           # Fork daemon, write PID file
+hyprslog server stop                            # Send SIGTERM via PID file
+hyprslog server status                          # Check if daemon is running
 
 # Send a log to the running server
-hyprlog send info SCOPE MSG                    # → default Unix socket
-hyprlog send --tcp host:9872 info SCOPE MSG    # → explicit TCP
-hyprlog send --app myapp info SCOPE MSG        # → with explicit app name
+hyprslog send info SCOPE MSG                    # → default Unix socket
+hyprslog send --tcp host:9872 info SCOPE MSG    # → explicit TCP
+hyprslog send --app myapp info SCOPE MSG        # → with explicit app name
 ```
 
-`hyprlog send` parallels the existing `hyprlog info SCOPE MSG` shorthand but routes to the server instead of local outputs.
+`hyprslog send` parallels the existing `hyprslog info SCOPE MSG` shorthand but routes to the server instead of local outputs.
 
 ## RemoteOutput (Rust Library API)
 
@@ -130,7 +130,7 @@ hyprlog send --app myapp info SCOPE MSG        # → with explicit app name
 let logger = Logger::builder()
     .level(Level::Debug)
     .remote()
-        .socket("/run/user/1000/hyprlog.sock")  // or .tcp("127.0.0.1:9872")
+        .socket("/run/user/1000/hyprslog.sock")  // or .tcp("127.0.0.1:9872")
         .done()
     .build();
 
@@ -147,7 +147,7 @@ Dropped records (if channel is full) are silently discarded to avoid slowing dow
 
 ```c
 // Feature: rserver + ffi
-HyprlogContext* ctx = hyprlog_init_remote("/run/user/1000/hyprlog.sock");
+HyprlogContext* ctx = hyprlog_init_remote("/run/user/1000/hyprslog.sock");
 hyprlog_info(ctx, "NET", "Connected");
 hyprlog_free(ctx);
 ```
@@ -163,7 +163,7 @@ hyprlog_free(ctx);
 ## Testing
 
 - Integration test: start server in background thread, send via `RemoteOutput`, check server received and logged.
-- CLI test: `hyprlog server start` → `hyprlog send info TEST "hello"` → `hyprlog server stop`.
+- CLI test: `hyprslog server start` → `hyprslog send info TEST "hello"` → `hyprslog server stop`.
 - Protocol test: connect via `nc`, send raw JSON, check server output.
 
 ## Non-Goals (YAGNI)

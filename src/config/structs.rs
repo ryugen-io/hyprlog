@@ -360,12 +360,12 @@ pub struct JsonConfig {
 impl Default for JsonConfig {
     fn default() -> Self {
         let path = directories::ProjectDirs::from("", "", "hyprs").map_or_else(
-            || "log.jsonl".to_string(),
+            || "journal.jsonl".to_string(),
             |dirs| {
                 dirs.state_dir()
                     .unwrap_or_else(|| dirs.data_dir())
                     .join("log/db")
-                    .join("log.jsonl")
+                    .join("journal.jsonl")
                     .to_string_lossy()
                     .into_owned()
             },

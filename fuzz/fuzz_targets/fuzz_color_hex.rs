@@ -1,6 +1,6 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
-use hyprlog::fmt::Color;
+use hyprs_log::fmt::Color;
 
 fuzz_target!(|data: &str| {
     // Must not panic on any hex string

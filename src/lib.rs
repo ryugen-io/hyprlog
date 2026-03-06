@@ -1,7 +1,7 @@
 // Forbid unsafe code except when ffi or hyprland features are enabled
 #![cfg_attr(not(any(feature = "ffi", feature = "hyprland")), forbid(unsafe_code))]
 
-//! `hyprlog` - Flexible logging library for Hyprland and beyond.
+//! `hyprslog` - Flexible logging library for Hyprland and beyond.
 //!
 //! A configurable logging library with support for:
 //! - Multiple output backends (terminal, file, JSON database)

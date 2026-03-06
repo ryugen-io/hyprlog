@@ -1,5 +1,5 @@
-use hyprlog::Config;
-use hyprlog::fmt::{Alignment, IconType, Transform};
+use hyprs_log::Config;
+use hyprs_log::fmt::{Alignment, IconType, Transform};
 
 #[test]
 fn parse_icon_type_variants() {

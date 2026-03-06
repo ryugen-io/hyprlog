@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-hyprlog is a structured logging library for the Hypr ecosystem, written in Rust (edition 2024, MSRV 1.85). It provides a CLI tool, a Rust library, C-ABI FFI bindings, and optional Hyprland IPC integration. Config files use TOML and live at `~/.config/hypr/hyprlog.conf`.
+hyprslog is a structured logging library for the Hypr ecosystem, written in Rust (edition 2024, MSRV 1.85). It provides a CLI tool, a Rust library, C-ABI FFI bindings, and optional Hyprland IPC integration. Config files use TOML and live at `~/.config/hypr/hyprslog.conf`.
 
 ## Build & Development Commands
 
@@ -49,7 +49,7 @@ cargo test --features ffi       # Include FFI tests
 - **`fmt/`** — Formatting subsystem: `color.rs` (hex parsing), `tag.rs` (prefix/suffix/transform/alignment), `scope.rs`, `style.rs` (inline XML-like `<bold>`, `<red>` tags), `icon.rs` (NerdFont/ASCII/none), `highlight.rs` (regex-based auto-highlighting), `format.rs` (template placeholders like `{tag} {scope} {msg}`).
 - **`level/`** — Log levels: Trace, Debug, Info, Warn, Error. Implements `Ord` for filtering.
 - **`cleanup/`** — Age/size-based log cleanup with gzip compression support.
-- **`internal/`** — Internal logger for hyprlog itself (uses `OnceLock`).
+- **`internal/`** — Internal logger for hyprslog itself (uses `OnceLock`).
 
 ### Feature-gated modules
 - **`cli/`** (feature: `cli`) — Clap-based subcommands in `cli/commands/`: log, json, preset, stats, cleanup, themes.

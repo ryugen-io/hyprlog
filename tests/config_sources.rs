@@ -1,5 +1,5 @@
-use hyprlog::Config;
-use hyprlog::Error;
+use hyprs_log::Config;
+use hyprs_log::Error;
 use std::fs;
 use tempfile::TempDir;
 

@@ -2,42 +2,42 @@
 
 #![cfg(feature = "ffi")]
 
-use hyprlog::{
-    HYPRLOG_LEVEL_DEBUG, HYPRLOG_LEVEL_ERROR, HYPRLOG_LEVEL_INFO, HYPRLOG_LEVEL_TRACE,
-    HYPRLOG_LEVEL_WARN, hyprlog_free, hyprlog_init, hyprlog_init_simple,
+use hyprs_log::{
+    HYPRSLOG_LEVEL_DEBUG, HYPRSLOG_LEVEL_ERROR, HYPRSLOG_LEVEL_INFO, HYPRSLOG_LEVEL_TRACE,
+    HYPRSLOG_LEVEL_WARN, hyprslog_free, hyprslog_init, hyprslog_init_simple,
 };
 use std::ptr;
 
 #[test]
 fn test_init_free() {
-    let ctx = hyprlog_init();
+    let ctx = hyprslog_init();
     assert!(!ctx.is_null());
     unsafe {
-        hyprlog_free(ctx);
+        hyprslog_free(ctx);
     }
 }
 
 #[test]
 fn test_init_simple() {
-    let ctx = hyprlog_init_simple(HYPRLOG_LEVEL_DEBUG, 0);
+    let ctx = hyprslog_init_simple(HYPRSLOG_LEVEL_DEBUG, 0);
     assert!(!ctx.is_null());
     unsafe {
-        hyprlog_free(ctx);
+        hyprslog_free(ctx);
     }
 }
 
 #[test]
 fn test_free_null() {
     unsafe {
-        hyprlog_free(ptr::null_mut());
+        hyprslog_free(ptr::null_mut());
     }
 }
 
 #[test]
 fn test_level_constants() {
-    assert_eq!(HYPRLOG_LEVEL_TRACE, 0);
-    assert_eq!(HYPRLOG_LEVEL_DEBUG, 1);
-    assert_eq!(HYPRLOG_LEVEL_INFO, 2);
-    assert_eq!(HYPRLOG_LEVEL_WARN, 3);
-    assert_eq!(HYPRLOG_LEVEL_ERROR, 4);
+    assert_eq!(HYPRSLOG_LEVEL_TRACE, 0);
+    assert_eq!(HYPRSLOG_LEVEL_DEBUG, 1);
+    assert_eq!(HYPRSLOG_LEVEL_INFO, 2);
+    assert_eq!(HYPRSLOG_LEVEL_WARN, 3);
+    assert_eq!(HYPRSLOG_LEVEL_ERROR, 4);
 }

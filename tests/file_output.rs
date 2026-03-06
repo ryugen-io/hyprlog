@@ -1,4 +1,4 @@
-use hyprlog::Logger;
+use hyprs_log::Logger;
 use std::fs;
 use tempfile::TempDir;
 
@@ -90,7 +90,7 @@ fn file_output_uses_log_full_app_override() {
             .done()
             .build();
 
-        logger.log_full(hyprlog::Level::Info, "S", "Override", Some("appx"));
+        logger.log_full(hyprs_log::Level::Info, "S", "Override", Some("appx"));
     } // logger dropped here, flushes buffer
 
     let path = tmp_dir.path().join("appx").join("override.log");

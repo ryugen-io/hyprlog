@@ -1,6 +1,6 @@
 //! Tests for JSON database output.
 
-use hyprlog::{Level, Logger};
+use hyprs_log::{Level, Logger};
 use std::fs;
 use tempfile::TempDir;
 

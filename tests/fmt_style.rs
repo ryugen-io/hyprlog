@@ -1,4 +1,4 @@
-use hyprlog::fmt::{Color, Segment, parse, render, render_plain, strip_tags};
+use hyprs_log::fmt::{Color, Segment, parse, render, render_plain, strip_tags};
 use std::collections::HashMap;
 
 #[test]

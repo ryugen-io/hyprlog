@@ -1,7 +1,7 @@
 //! Tests for `label_override` functionality.
 
-use hyprlog::output::LogRecord;
-use hyprlog::{FormatValues, Level, TagConfig};
+use hyprs_log::output::LogRecord;
+use hyprs_log::{FormatValues, Level, TagConfig};
 
 #[test]
 fn format_tag_without_override() {

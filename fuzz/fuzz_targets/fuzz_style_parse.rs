@@ -1,6 +1,6 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
-use hyprlog::fmt::style;
+use hyprs_log::fmt::style;
 
 fuzz_target!(|data: &str| {
     // Must not panic on any input, including unclosed/malformed tags

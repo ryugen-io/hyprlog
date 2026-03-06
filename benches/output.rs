@@ -1,7 +1,7 @@
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
-use hyprlog::fmt::FormatValues;
-use hyprlog::level::Level;
-use hyprlog::output::{FileOutput, JsonOutput, LogRecord, Output};
+use hyprs_log::fmt::FormatValues;
+use hyprs_log::level::Level;
+use hyprs_log::output::{FileOutput, JsonOutput, LogRecord, Output};
 use tempfile::TempDir;
 
 fn make_record() -> LogRecord {

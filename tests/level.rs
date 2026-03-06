@@ -1,6 +1,6 @@
 //! Tests for log level functionality.
 
-use hyprlog::Level;
+use hyprs_log::Level;
 
 #[test]
 fn level_ordering() {

@@ -1,4 +1,4 @@
-use hyprlog::fmt::{Color, colorize, colorize_bg};
+use hyprs_log::fmt::{Color, colorize, colorize_bg};
 
 #[test]
 fn from_hex_parses_valid_colors() {

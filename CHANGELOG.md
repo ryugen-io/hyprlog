@@ -42,6 +42,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Hyprland-style config with `source` directive support
 - Log level filtering (trace, debug, info, warn, error)
 
-[Unreleased]: https://github.com/ryugen-io/hyprlog/compare/v0.5.0...HEAD
-[0.5.0]: https://github.com/ryugen-io/hyprlog/compare/v0.1.0...v0.5.0
-[0.1.0]: https://github.com/ryugen-io/hyprlog/releases/tag/v0.1.0
+[Unreleased]: https://github.com/ryugen-io/hyprslog/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/ryugen-io/hyprslog/compare/v0.1.0...v0.5.0
+[0.1.0]: https://github.com/ryugen-io/hyprslog/releases/tag/v0.1.0

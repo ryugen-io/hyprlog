@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Add a feature-gated (`rserver`) remote logging server to hyprlog, where programs send `LogRecord`s over Unix socket or TCP, and the daemon handles all output via a standard `Logger`.
+**Goal:** Add a feature-gated (`rserver`) remote logging server to hyprslog, where programs send `LogRecord`s over Unix socket or TCP, and the daemon handles all output via a standard `Logger`.
 
 **Architecture:** Tokio-based async server accepts connections on a Unix socket and/or TCP port, reads newline-delimited JSON records, and dispatches them through a `Logger`. Clients use `RemoteOutput`, which wraps an internal Tokio runtime and `mpsc` channel so `Output::write()` stays non-blocking. CLI gets `server start/stop/status` and `send` subcommands.
 
@@ -205,9 +205,9 @@ fn default_socket_path() -> String {
     let uid = std::process::id(); // fallback: use pid (not great, but works without nix dep)
     // Try $XDG_RUNTIME_DIR first
     if let Ok(runtime) = std::env::var("XDG_RUNTIME_DIR") {
-        return format!("{runtime}/hyprlog.sock");
+        return format!("{runtime}/hyprslog.sock");
     }
-    format!("/tmp/hyprlog-{uid}.sock")
+    format!("/tmp/hyprslog-{uid}.sock")
 }
 
 fn default_tcp_bind() -> String {
@@ -216,12 +216,12 @@ fn default_tcp_bind() -> String {
 
 fn default_pid_file() -> String {
     if let Ok(runtime) = std::env::var("XDG_RUNTIME_DIR") {
-        return format!("{runtime}/hyprlog.pid");
+        return format!("{runtime}/hyprslog.pid");
     }
-    "/tmp/hyprlog.pid".to_string()
+    "/tmp/hyprslog.pid".to_string()
 }
 
-/// Configuration for the hyprlog server daemon.
+/// Configuration for the hyprslog server daemon.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default)]
 pub struct ServerConfig {
@@ -370,7 +370,7 @@ The test will spin up a tiny TCP listener, connect via RemoteOutput, send a reco
 Create `src/output/remote.rs`:
 
 ```rust
-//! Remote output: sends log records to a hyprlog server.
+//! Remote output: sends log records to a hyprslog server.
 
 use crate::internal;
 use crate::output::{LogRecord, Output};
@@ -387,7 +387,7 @@ pub enum RemoteTarget {
     Tcp(String),
 }
 
-/// Output backend that forwards log records to a remote hyprlog server.
+/// Output backend that forwards log records to a remote hyprslog server.
 ///
 /// Uses an internal channel and background Tokio runtime so `write()` never blocks.
 pub struct RemoteOutput {
@@ -606,7 +606,7 @@ The test goes in the existing `tests/` directory. Create `tests/remote_builder.r
 //! Tests for RemoteBuilder integration.
 #[cfg(feature = "rserver")]
 mod rserver_tests {
-    use hyprlog::{Level, Logger};
+    use hyprslog::{Level, Logger};
     use std::net::TcpListener;
     use std::io::BufRead;
     use std::sync::{Arc, Mutex};
@@ -1146,14 +1146,14 @@ git commit -m "feat(rserver): add PID file management and server run() entry poi
 **Files:**
 - Create: `src/cli/commands/server.rs`
 - Modify: `src/cli/commands/mod.rs`
-- Modify: `src/bin/hyprlog.rs`
+- Modify: `src/bin/hyprslog.rs`
 
 **Step 1: Write the code**
 
 Create `src/cli/commands/server.rs`:
 
 ```rust
-//! CLI commands: `hyprlog server start/stop/status` and `hyprlog send`.
+//! CLI commands: `hyprslog server start/stop/status` and `hyprslog send`.
 
 use crate::cli::util::parse_level;
 use crate::internal;
@@ -1163,7 +1163,7 @@ use crate::server::config::ServerConfig;
 use crate::server::daemon;
 use std::process::ExitCode;
 
-/// Handles `hyprlog server <subcommand>`.
+/// Handles `hyprslog server <subcommand>`.
 #[must_use]
 pub fn cmd_server(args: &[&str]) -> ExitCode {
     match args.first().copied() {
@@ -1171,7 +1171,7 @@ pub fn cmd_server(args: &[&str]) -> ExitCode {
         Some("stop") => cmd_server_stop(),
         Some("status") => cmd_server_status(),
         _ => {
-            internal::warn("CLI", "Usage: hyprlog server <start|stop|status>");
+            internal::warn("CLI", "Usage: hyprslog server <start|stop|status>");
             ExitCode::FAILURE
         }
     }
@@ -1275,17 +1275,17 @@ fn cmd_server_status() -> ExitCode {
     };
     match daemon::read_pid(&config) {
         Ok(Some(pid)) if daemon::pid_is_running(pid) => {
-            println!("hyprlog server is running (PID {pid})");
+            println!("hyprslog server is running (PID {pid})");
             ExitCode::SUCCESS
         }
         _ => {
-            println!("hyprlog server is not running");
+            println!("hyprslog server is not running");
             ExitCode::FAILURE
         }
     }
 }
 
-/// Handles `hyprlog send [--app <app>] [--tcp <addr>] <level> <scope> <msg...>`.
+/// Handles `hyprslog send [--app <app>] [--tcp <addr>] <level> <scope> <msg...>`.
 ///
 /// Default target: Unix socket from server config.
 #[must_use]
@@ -1310,7 +1310,7 @@ pub fn cmd_send(args: &[&str]) -> ExitCode {
     }
 
     if remaining.len() < 3 {
-        internal::warn("CLI", "Usage: hyprlog send [--app <app>] [--tcp <addr>] <level> <scope> <message>");
+        internal::warn("CLI", "Usage: hyprslog send [--app <app>] [--tcp <addr>] <level> <scope> <message>");
         return ExitCode::FAILURE;
     }
 
@@ -1359,7 +1359,7 @@ And in `[features]`:
 rserver = ["dep:tokio", "dep:libc"]
 ```
 
-**Step 2: Wire into mod.rs and bin/hyprlog.rs**
+**Step 2: Wire into mod.rs and bin/hyprslog.rs**
 
 In `src/cli/commands/mod.rs`, add at the bottom:
 ```rust
@@ -1369,10 +1369,10 @@ mod server;
 pub use server::{cmd_send, cmd_server};
 ```
 
-In `src/bin/hyprlog.rs`, add at the top (with the other cfg imports):
+In `src/bin/hyprslog.rs`, add at the top (with the other cfg imports):
 ```rust
 #[cfg(feature = "rserver")]
-use hyprlog::cli::{cmd_send, cmd_server};
+use hyprslog::cli::{cmd_send, cmd_server};
 ```
 
 And in the `match args_str[0]` block, add before the `_` wildcard:
@@ -1384,8 +1384,8 @@ And in the `match args_str[0]` block, add before the `_` wildcard:
 #[cfg(feature = "rserver")]
 "server" if args_str.get(1) == Some(&"--foreground") => {
     // Run server in foreground (called by start)
-    let config = hyprlog::ServerConfig::load().unwrap_or_default();
-    match hyprlog::server::run(&config) {
+    let config = hyprslog::ServerConfig::load().unwrap_or_default();
+    match hyprslog::server::run(&config) {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
             eprintln!("Server error: {e}");
@@ -1407,7 +1407,7 @@ Expected: compiles successfully.
 **Step 4: Commit**
 
 ```bash
-git add src/cli/commands/server.rs src/cli/commands/mod.rs src/bin/hyprlog.rs Cargo.toml Cargo.lock
+git add src/cli/commands/server.rs src/cli/commands/mod.rs src/bin/hyprslog.rs Cargo.toml Cargo.lock
 git commit -m "feat(rserver): add server start/stop/status and send CLI commands"
 ```
 
@@ -1426,8 +1426,8 @@ Spin up the server in a background thread, send via RemoteOutput, verify the ser
 //! Integration test: full server round-trip.
 #[cfg(feature = "rserver")]
 mod tests {
-    use hyprlog::server::ServerConfig;
-    use hyprlog::{Level, Logger};
+    use hyprslog::server::ServerConfig;
+    use hyprslog::{Level, Logger};
     use std::io::BufRead;
     use std::sync::{Arc, Mutex};
     use std::time::Duration;
@@ -1625,4 +1625,4 @@ git commit -m "feat(rserver): expose public API in lib.rs re-exports"
   ```rust
   #![cfg_attr(not(any(feature = "ffi", feature = "hyprland", feature = "rserver")), forbid(unsafe_code))]
   ```
-- For the `server --foreground` dispatch in `bin/hyprlog.rs`: Rust requires match arms to be ordered such that more specific patterns come first. Put `"server" if args[1] == "--foreground"` before the plain `"server"` arm — or better, check inside `cmd_server()` for the `--foreground` sub-arg.
+- For the `server --foreground` dispatch in `bin/hyprslog.rs`: Rust requires match arms to be ordered such that more specific patterns come first. Put `"server" if args[1] == "--foreground"` before the plain `"server"` arm — or better, check inside `cmd_server()` for the `--foreground` sub-arg.

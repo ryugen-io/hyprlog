@@ -1,8 +1,8 @@
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
-use hyprlog::fmt::Color;
-use hyprlog::fmt::FormatTemplate;
-use hyprlog::fmt::style;
-use hyprlog::level::Level;
+use hyprs_log::fmt::Color;
+use hyprs_log::fmt::FormatTemplate;
+use hyprs_log::fmt::style;
+use hyprs_log::level::Level;
 use std::str::FromStr;
 
 fn bench_format_template_parse(c: &mut Criterion) {
@@ -114,7 +114,7 @@ level = \"info\"
 enabled = true
 colors = true
 
-source = \"/etc/hyprlog/defaults.conf\"
+source = \"/etc/hyprslog/defaults.conf\"
 
 [tag]
 prefix = \"[\"
@@ -137,11 +137,11 @@ suffix = \"]\"
     let mut group = c.benchmark_group("extract_sources");
 
     group.bench_function("with_sources", |b| {
-        b.iter(|| hyprlog::config::extract_sources(black_box(config_with_sources)));
+        b.iter(|| hyprs_log::config::extract_sources(black_box(config_with_sources)));
     });
 
     group.bench_function("no_sources", |b| {
-        b.iter(|| hyprlog::config::extract_sources(black_box(config_no_sources)));
+        b.iter(|| hyprs_log::config::extract_sources(black_box(config_no_sources)));
     });
 
     group.finish();

@@ -1,7 +1,7 @@
-# hyprlog justfile
+# hyprslog justfile
 
 dev := "/home/ryu/code/.dev/scripts/shared"
-local := "/home/ryu/code/.dev/scripts/specific/hyprlog"
+local := "/home/ryu/code/.dev/scripts/specific/hyprslog"
 
 default:
     @just --list
@@ -91,6 +91,6 @@ deploy-rpi host="rpi":
     @echo "==> building on {{host}}..."
     @ssh {{host}} "cd ~/projects/hyprs-log && cargo build --release --features rserver --ignore-rust-version 2>&1"
     @echo "==> installing binary on {{host}}..."
-    @ssh {{host}} "cp ~/projects/hyprs-log/target/release/hyprlog ~/.local/bin/hyprlog.new && mv ~/.local/bin/hyprlog.new ~/.local/bin/hyprlog && sudo systemctl restart hyprlog"
+    @ssh {{host}} "cp ~/projects/hyprs-log/target/release/hyprslog ~/.local/bin/hyprslog.new && mv ~/.local/bin/hyprslog.new ~/.local/bin/hyprslog && sudo systemctl restart hyprslog"
     @echo "==> done"
-    @ssh {{host}} "systemctl status hyprlog --no-pager -l"
+    @ssh {{host}} "systemctl status hyprslog --no-pager -l"

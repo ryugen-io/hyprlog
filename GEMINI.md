@@ -1,14 +1,14 @@
-# hyprlog
+# hyprslog
 
 **Unified Logging for the Hypr Ecosystem**
 
 ## Project Overview
 
-`hyprlog` is a Rust-based logging library and CLI tool designed for the Hypr ecosystem (Hyprland). It provides a flexible and unified logging solution with features like:
+`hyprslog` is a Rust-based logging library and CLI tool designed for the Hypr ecosystem (Hyprland). It provides a flexible and unified logging solution with features like:
 
 *   **Multiple Backends:** Supports terminal (with colors/icons), file (with rotation/retention), and JSON database outputs.
 *   **Rich Formatting:** Inline styling (e.g., `<bold>`, `<red>`) and automatic highlighting of URLs, paths, and numbers.
-*   **Configuration:** TOML-based configuration (`~/.config/hypr/hyprlog.conf`) with support for including other config files (`source = "..."`).
+*   **Configuration:** TOML-based configuration (`~/.config/hypr/hyprslog.conf`) with support for including other config files (`source = "..."`).
 *   **Hyprland Integration:** Can connect to Hyprland via IPC to watch and log events.
 *   **Interactive Shell:** Includes a REPL for interactive use with themes and history.
 *   **FFI:** C-ABI bindings for integration with C/C++ projects.
@@ -20,7 +20,7 @@ The project is structured as a single crate with feature-gated modules:
 
 ### Source Structure (`src/`)
 
-*   **`bin/hyprlog.rs`**: The main entry point for the CLI application.
+*   **`bin/hyprslog.rs`**: The main entry point for the CLI application.
 *   **`lib.rs`**: The library entry point, exporting the public API.
 *   **`logger/`**: Core logging engine implementing the builder pattern (`Logger`, `LoggerBuilder`).
 *   **`output/`**: Output backend implementations:
@@ -39,7 +39,7 @@ The project is structured as a single crate with feature-gated modules:
 
 ### Configuration
 
-The default configuration is located at `~/.config/hypr/hyprlog.conf`.
+The default configuration is located at `~/.config/hypr/hyprslog.conf`.
 
 **Key Configuration Sections:**
 
@@ -76,7 +76,7 @@ This project uses `just` as a command runner, which delegates to scripts in `dev
 ### FFI / C-Binding
 
 The `ffi` feature enables C-compatible symbols.
-*   **Headers:** `include/hyprlog.h`
+*   **Headers:** `include/hyprslog.h`
 *   **Usage:** Link against `libhyprlog.so` / `libhyprlog.a`.
 
 ## Dependencies

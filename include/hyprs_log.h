@@ -1,7 +1,7 @@
 /**
- * hyprlog - Flexible logging library
+ * hyprslog - Flexible logging library
  *
- * C-ABI bindings for hyprlog.
+ * C-ABI bindings for hyprslog.
  *
  * Basic usage:
  *   HyprlogContext* ctx = hyprlog_init();
@@ -53,9 +53,9 @@ extern "C" {
 #endif // __cplusplus
 
 /**
- * Creates a new hyprlog context with default configuration.
+ * Creates a new hyprslog context with default configuration.
  *
- * Loads config from `~/.config/hypr/hyprlog.conf` if present,
+ * Loads config from `~/.config/hypr/hyprslog.conf` if present,
  * otherwise uses defaults.
  *
  * Returns `NULL` on failure. Use `hyprlog_get_last_error` to retrieve error.
@@ -63,7 +63,7 @@ extern "C" {
 struct HyprlogContext *hyprlog_init(void);
 
 /**
- * Creates a new hyprlog context with configuration from the specified path.
+ * Creates a new hyprslog context with configuration from the specified path.
  *
  * # Safety
  * `config_path` must be a valid null-terminated UTF-8 string or `NULL`.
@@ -76,7 +76,7 @@ struct HyprlogContext *hyprlog_init_with_config(const char *config_path);
 /**
  * Creates a logger with default config but custom app name.
  *
- * Loads config from `~/.config/hypr/hyprlog.conf` if present,
+ * Loads config from `~/.config/hypr/hyprslog.conf` if present,
  * but uses the provided `app_name` for file logging paths.
  *
  * # Safety
@@ -98,7 +98,7 @@ struct HyprlogContext *hyprlog_init_with_app(const char *app_name);
 struct HyprlogContext *hyprlog_init_simple(int level, int colors);
 
 /**
- * Frees a hyprlog context.
+ * Frees a hyprslog context.
  *
  * # Safety
  * `ctx` must be a valid pointer returned by `hyprlog_init*` or `NULL`.

@@ -53,16 +53,16 @@ impl Default for JsonOutput {
 impl JsonOutput {
     /// Creates a new JSON output with default path.
     ///
-    /// Default location: `~/.local/state/hyprs/log/db/log.jsonl`
+    /// Default location: `~/.local/state/hyprs/log/db/journal.jsonl`
     #[must_use]
     pub fn new() -> Self {
         let file_path = directories::ProjectDirs::from("", "", "hyprs").map_or_else(
-            || PathBuf::from("log.jsonl"),
+            || PathBuf::from("journal.jsonl"),
             |dirs| {
                 dirs.state_dir()
                     .unwrap_or_else(|| dirs.data_dir())
                     .join("log/db")
-                    .join("log.jsonl")
+                    .join("journal.jsonl")
             },
         );
 

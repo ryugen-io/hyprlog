@@ -1,7 +1,7 @@
 /**
- * hyprlog C++ FFI Example
+ * hyprslog C++ FFI Example
  *
- * This demonstrates how the C header (hyprlog.h) connects to
+ * This demonstrates how the C header (hyprslog.h) connects to
  * the Rust implementation (libhyprlog.so).
  *
  * Build flow:
@@ -9,7 +9,7 @@
  *      -> compiles lib.rs to libhyprlog.so (actual code)
  *
  *   2. C++: cmake && make
- *      -> includes hyprlog.h (declarations only)
+ *      -> includes hyprslog.h (declarations only)
  *      -> links against libhyprlog.so (implementation)
  *
  *   3. Runtime: LD_LIBRARY_PATH points to libhyprlog.so
@@ -26,14 +26,14 @@
 // - constants (HYPRLOG_LEVEL_*)
 //
 // NO actual code - just tells the compiler "trust me, these exist"
-#include "hyprlog.h"
+#include "hyprslog.h"
 
 void demonstrate_basic_logging() {
     std::cout << "\n=== Basic Logging ===" << std::endl;
     std::cout << "Creating context with hyprlog_init()..." << std::endl;
 
     // This call:
-    // 1. C++ compiler sees declaration in hyprlog.h
+    // 1. C++ compiler sees declaration in hyprslog.h
     // 2. Linker finds symbol 'hyprlog_init' in libhyprlog.so
     // 3. At runtime: jumps into Rust code, executes Logger::builder()...
     // 4. Returns pointer to heap-allocated HyprlogContext (Box::into_raw)
@@ -175,7 +175,7 @@ void explain_memory_model() {
 
 int main() {
     std::cout << "========================================" << std::endl;
-    std::cout << "   hyprlog C++ FFI Demonstration" << std::endl;
+    std::cout << "   hyprslog C++ FFI Demonstration" << std::endl;
     std::cout << "========================================" << std::endl;
 
     explain_memory_model();

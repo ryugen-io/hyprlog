@@ -1,4 +1,4 @@
-use hyprlog::fmt::{FormatSegment, FormatTemplate, FormatValues, Placeholder};
+use hyprs_log::fmt::{FormatSegment, FormatTemplate, FormatValues, Placeholder};
 
 #[test]
 fn parse_mixed_placeholders_and_literals() {

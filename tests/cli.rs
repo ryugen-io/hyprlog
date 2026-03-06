@@ -1,10 +1,10 @@
 use std::process::Command;
 
 fn run(args: &[&str]) -> std::process::Output {
-    Command::new(env!("CARGO_BIN_EXE_hyprlog"))
+    Command::new(env!("CARGO_BIN_EXE_hyprslog"))
         .args(args)
         .output()
-        .expect("failed to run hyprlog")
+        .expect("failed to run hyprslog")
 }
 
 #[test]
@@ -13,7 +13,7 @@ fn help_shows_usage() {
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("Usage:"));
-    assert!(stdout.contains("hyprlog"));
+    assert!(stdout.contains("hyprslog"));
 }
 
 #[test]
@@ -21,7 +21,7 @@ fn version_prints_version_string() {
     let output = run(&["version"]);
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.starts_with("hyprlog "));
+    assert!(stdout.starts_with("hyprslog "));
 }
 
 #[test]

@@ -1,7 +1,7 @@
 //! Tests for auto-highlighting functionality.
 
-use hyprlog::config::{HighlightConfig, PatternsConfig};
-use hyprlog::fmt::highlight::inject_tags;
+use hyprs_log::config::{HighlightConfig, PatternsConfig};
+use hyprs_log::fmt::highlight::inject_tags;
 use std::collections::HashMap;
 
 fn test_config() -> HighlightConfig {

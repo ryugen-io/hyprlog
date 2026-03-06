@@ -1,5 +1,5 @@
-use hyprlog::Config;
-use hyprlog::config::PresetConfig;
+use hyprs_log::Config;
+use hyprs_log::config::PresetConfig;
 use std::collections::HashMap;
 
 #[test]

@@ -1,7 +1,7 @@
 //! Tests for logger functionality.
 
-use hyprlog::config::PresetConfig;
-use hyprlog::{Level, Logger};
+use hyprs_log::config::PresetConfig;
+use hyprs_log::{Level, Logger};
 use std::collections::HashMap;
 
 #[test]

@@ -1,23 +1,23 @@
-# cbindgen configuration for hyprlog FFI
+# cbindgen configuration for hyprslog FFI
 
 language = "C"
 
 # Header settings
 header = """
 /**
- * hyprlog - Flexible logging library
+ * hyprslog - Flexible logging library
  *
- * C-ABI bindings for hyprlog.
+ * C-ABI bindings for hyprslog.
  *
  * Basic usage:
- *   HyprlogContext* ctx = hyprlog_init();
- *   hyprlog_info(ctx, "MAIN", "Application started");
- *   hyprlog_free(ctx);
+ *   HyprlogContext* ctx = hyprslog_init();
+ *   hyprslog_info(ctx, "MAIN", "Application started");
+ *   hyprslog_free(ctx);
  *
  * Or with simple setup (no config file):
- *   HyprlogContext* ctx = hyprlog_init_simple(HYPRLOG_LEVEL_DEBUG, 1);
- *   hyprlog_debug(ctx, "NET", "Connecting...");
- *   hyprlog_free(ctx);
+ *   HyprlogContext* ctx = hyprslog_init_simple(HYPRLOG_LEVEL_DEBUG, 1);
+ *   hyprslog_debug(ctx, "NET", "Connecting...");
+ *   hyprslog_free(ctx);
  */
 """
 

@@ -2,8 +2,8 @@
 
 #![cfg(feature = "hyprland")]
 
-use hyprlog::config::HyprlandConfig;
-use hyprlog::hyprland::socket;
+use hyprs_log::config::HyprlandConfig;
+use hyprs_log::hyprland::socket;
 use std::path::PathBuf;
 
 #[test]

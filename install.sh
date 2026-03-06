@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2155
 # =============================================================================
-# hyprlog Install Script
-# Builds and installs the hyprlog CLI and optionally the C-ABI library
+# hyprslog Install Script
+# Builds and installs the hyprslog CLI and optionally the C-ABI library
 #
 # Usage:
 #   From source (in repo):  ./install.sh
 #   From release package:   ./install.sh
-#   Remote install:         curl -fsSL https://raw.githubusercontent.com/ryugen-io/hyprlog/main/install.sh | bash
+#   Remote install:         curl -fsSL https://raw.githubusercontent.com/ryugen-io/hyprs-log/main/install.sh | bash
 #   Specific version:       curl -fsSL ... | bash -s -- v0.1.0
 #
 # Installs:
-#   CLI:    ~/.local/bin/hypr/hyprlog
-#   C-ABI:  ~/.local/lib/libhyprlog.so (optional, source builds only)
-#           hyprlog.h (interactive path selection)
+#   CLI:    ~/.local/bin/hyprs/hyprslog
+#   C-ABI:  ~/.local/lib/libhyprs_log.so (optional, source builds only)
+#           hyprs_log.h (interactive path selection)
 # =============================================================================
 
 set -euo pipefail
@@ -26,14 +26,14 @@ shopt -s inherit_errexit 2>/dev/null || true
 # -----------------------------------------------------------------------------
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || echo "")"
 readonly CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/hypr"
-readonly CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/hyprlog"
-readonly STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/hyprlog"
-readonly INSTALL_DIR="${HOME}/.local/bin/hypr"
-readonly LIB_DIR="${HOME}/.local/lib"
-readonly INCLUDE_DIR="${HOME}/.local/include"
+readonly CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/hyprs/log"
+readonly STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/hyprs/log"
+readonly INSTALL_DIR="${HOME}/.local/bin/hyprs"
+readonly LIB_DIR="${HOME}/.local/lib/hyprs"
+readonly INCLUDE_DIR="${HOME}/.local/include/hyprs"
 
 # GitHub Release Settings
-readonly REPO="ryugen-io/hyprlog"
+readonly REPO="ryugen-io/hyprs-log"
 readonly GITHUB_API="https://api.github.com/repos/${REPO}/releases"
 
 # Installation mode: "source", "package", or "remote"
@@ -65,7 +65,7 @@ else
     warn()    { echo -e "${YELLOW}[warn]${NC} INSTALL  $*" >&2; }
     error()   { echo -e "${RED}[error]${NC} INSTALL  $*" >&2; }
     die()     { error "$*"; exit 1; }
-    header()  { echo -e "${PURPLE}[hyprlog]${NC} INSTALL  $*"; }
+    header()  { echo -e "${PURPLE}[hyprslog]${NC} INSTALL  $*"; }
 fi
 
 # -----------------------------------------------------------------------------
@@ -98,7 +98,7 @@ detect_arch() {
 detect_install_mode() {
     if [[ -n "$SCRIPT_DIR" && -f "${SCRIPT_DIR}/Cargo.toml" ]]; then
         INSTALL_MODE="source"
-    elif [[ -n "$SCRIPT_DIR" && -d "${SCRIPT_DIR}/bin" && -f "${SCRIPT_DIR}/bin/hyprlog" ]]; then
+    elif [[ -n "$SCRIPT_DIR" && -d "${SCRIPT_DIR}/bin" && -f "${SCRIPT_DIR}/bin/hyprslog" ]]; then
         INSTALL_MODE="package"
     else
         INSTALL_MODE="remote"
@@ -120,23 +120,23 @@ get_latest_release() {
 download_release() {
     local version="$1"
     local arch="$2"
-    local url="https://github.com/${REPO}/releases/download/${version}/hyprlog-${version}-${arch}.tar.gz"
+    local url="https://github.com/${REPO}/releases/download/${version}/hyprslog-${version}-${arch}.tar.gz"
     local tmp_dir
     tmp_dir="$(mktemp -d)"
 
     log "Downloading ${url}..."
 
     if command_exists curl; then
-        curl -fsSL "$url" -o "${tmp_dir}/hyprlog.tar.gz" || die "Download failed"
+        curl -fsSL "$url" -o "${tmp_dir}/hyprslog.tar.gz" || die "Download failed"
     elif command_exists wget; then
-        wget -q "$url" -O "${tmp_dir}/hyprlog.tar.gz" || die "Download failed"
+        wget -q "$url" -O "${tmp_dir}/hyprslog.tar.gz" || die "Download failed"
     fi
 
     log "Extracting..."
-    tar -xzf "${tmp_dir}/hyprlog.tar.gz" -C "$tmp_dir"
+    tar -xzf "${tmp_dir}/hyprslog.tar.gz" -C "$tmp_dir"
 
     local pkg_dir
-    pkg_dir="$(find "$tmp_dir" -maxdepth 1 -type d -name 'hyprlog-*' | head -1)"
+    pkg_dir="$(find "$tmp_dir" -maxdepth 1 -type d -name 'hyprslog-*' | head -1)"
 
     if [[ -z "$pkg_dir" ]]; then
         die "Failed to extract release package"
@@ -166,7 +166,7 @@ install_from_source() {
     fi
 
     log "Building release binary..."
-    if ! cargo build --release --features hyprland,rserver --bin hyprlog; then
+    if ! cargo build --release --features hyprland,rserver --bin hyprslog; then
         die "Build failed"
     fi
     success "Build complete"
@@ -174,27 +174,27 @@ install_from_source() {
     # Compact binary if UPX is available
     if command_exists upx; then
         log "Compacting binary with UPX..."
-        compact_binary "target/release/hyprlog"
+        compact_binary "target/release/hyprslog"
     fi
 
     # Install binary
-    local src="target/release/hyprlog"
+    local src="target/release/hyprslog"
     if [[ ! -f "$src" ]]; then
         die "Binary not found: $src"
     fi
     cp "$src" "$INSTALL_DIR/" || die "Failed to install binary"
-    chmod +x "${INSTALL_DIR}/hyprlog"
+    chmod +x "${INSTALL_DIR}/hyprslog"
 }
 
 install_from_package() {
     local pkg_dir="$1"
 
-    local src="${pkg_dir}/bin/hyprlog"
+    local src="${pkg_dir}/bin/hyprslog"
     if [[ ! -f "$src" ]]; then
         die "Binary not found: $src"
     fi
     cp "$src" "$INSTALL_DIR/" || die "Failed to install binary"
-    chmod +x "${INSTALL_DIR}/hyprlog"
+    chmod +x "${INSTALL_DIR}/hyprslog"
 }
 
 install_from_remote() {
@@ -212,7 +212,7 @@ install_from_remote() {
         die "Could not determine release version"
     fi
 
-    log "Installing hyprlog ${version} for ${arch}"
+    log "Installing hyprslog ${version} for ${arch}"
 
     local pkg_dir
     pkg_dir="$(download_release "$version" "$arch")"
@@ -239,7 +239,7 @@ compact_binary() {
 }
 
 install_config() {
-    local config_file="${CONFIG_DIR}/hyprlog.conf"
+    local config_file="${CONFIG_DIR}/hyprslog.conf"
 
     if [[ -f "$config_file" ]]; then
         log "Config exists: $config_file"
@@ -248,8 +248,8 @@ install_config() {
 
     # Try to find default config
     local default_config=""
-    if [[ -n "$SCRIPT_DIR" && -f "${SCRIPT_DIR}/assets/hyprlog.conf" ]]; then
-        default_config="${SCRIPT_DIR}/assets/hyprlog.conf"
+    if [[ -n "$SCRIPT_DIR" && -f "${SCRIPT_DIR}/assets/hyprslog.conf" ]]; then
+        default_config="${SCRIPT_DIR}/assets/hyprslog.conf"
     fi
 
     if [[ -n "$default_config" ]]; then
@@ -260,7 +260,7 @@ install_config() {
         cat > "$config_file" << 'CONF'
 [general]
 level = "info"
-app_name = "hyprlog"
+app_name = "hyprslog"
 
 [terminal]
 enabled = true
@@ -295,8 +295,8 @@ install_cabi() {
     fi
 
     # Check if library exists
-    local lib_src="${SCRIPT_DIR}/target/release/libhyprlog.so"
-    local header_src="${SCRIPT_DIR}/include/hyprlog.h"
+    local lib_src="${SCRIPT_DIR}/target/release/libhyprs_log.so"
+    local header_src="${SCRIPT_DIR}/include/hyprs_log.h"
 
     if [[ ! -f "$lib_src" ]]; then
         log "Building C-ABI library..."
@@ -317,13 +317,13 @@ install_cabi() {
     # Install library to standard location
     create_dir "$LIB_DIR"
     cp "$lib_src" "${LIB_DIR}/" || die "Failed to install library"
-    success "Installed library: ${LIB_DIR}/libhyprlog.so"
+    success "Installed library: ${LIB_DIR}/libhyprs_log.so"
 
     # Ask user where to install header
     echo ""
-    log "Where should the header file (hyprlog.h) be installed?"
+    log "Where should the header file (hyprs_log.h) be installed?"
     echo "  [1] Current directory: $(pwd)"
-    echo "  [2] System include: ${INCLUDE_DIR}/hyprlog"
+    echo "  [2] System include: ${INCLUDE_DIR}"
     echo "  [3] Custom path"
     echo "  [4] Skip header installation"
     echo ""
@@ -335,7 +335,7 @@ install_cabi() {
             header_dest="$(pwd)"
             ;;
         2)
-            header_dest="${INCLUDE_DIR}/hyprlog"
+            header_dest="${INCLUDE_DIR}"
             create_dir "$header_dest"
             ;;
         3)
@@ -359,7 +359,7 @@ install_cabi() {
     esac
 
     cp "$header_src" "${header_dest}/" || die "Failed to install header"
-    success "Installed header: ${header_dest}/hyprlog.h"
+    success "Installed header: ${header_dest}/hyprs_log.h"
 
     # ldconfig hint
     if [[ ":${LD_LIBRARY_PATH:-}:" != *":$LIB_DIR:"* ]]; then
@@ -417,12 +417,12 @@ main() {
     if [[ ":${PATH:-}:" != *":$INSTALL_DIR:"* ]]; then
         warn "$INSTALL_DIR not in PATH"
         echo "  Add to your shell config:"
-        echo "    export PATH=\"\$HOME/.local/bin/hypr:\$PATH\""
+        echo "    export PATH=\"\$HOME/.local/bin/hyprs:\$PATH\""
     fi
 
     # Show installed version
-    if command_exists "${INSTALL_DIR}/hyprlog"; then
-        log "Installed version: $("${INSTALL_DIR}/hyprlog" --version 2>/dev/null || echo "unknown")"
+    if command_exists "${INSTALL_DIR}/hyprslog"; then
+        log "Installed version: $("${INSTALL_DIR}/hyprslog" --version 2>/dev/null || echo "unknown")"
     fi
 }
 

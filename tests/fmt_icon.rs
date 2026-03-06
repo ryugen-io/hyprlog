@@ -1,5 +1,5 @@
-use hyprlog::Level;
-use hyprlog::fmt::{IconSet, IconType};
+use hyprs_log::Level;
+use hyprs_log::fmt::{IconSet, IconType};
 
 #[test]
 fn ascii_icons_expose_expected_values() {
